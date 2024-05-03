@@ -1,0 +1,500 @@
+diff --git a/src/common/dout.h b/src/common/dout.h
+index 4cd60efff..64a28b859 100644
+--- a/src/common/dout.h
++++ b/src/common/dout.h
+@@ -48,7 +48,7 @@ class DoutPrefixProvider {
+ public:
+   virtual std::ostream& gen_prefix(std::ostream& out) const = 0;
+   virtual CephContext *get_cct() const = 0;
+-  virtual unsigned get_subsys() const = 0;
++  constexpr virtual unsigned get_subsys() const = 0;
+   virtual ~DoutPrefixProvider() {}
+ };
+ 
+@@ -69,7 +69,7 @@ class NoDoutPrefix : public DoutPrefixProvider {
+ 
+   std::ostream& gen_prefix(std::ostream& out) const override { return out; }
+   CephContext *get_cct() const override { return cct; }
+-  unsigned get_subsys() const override { return subsys; }
++  constexpr unsigned get_subsys() const override { return subsys; }
+ };
+ 
+ // a prefix provider with static (const char*) prefix
+@@ -96,7 +96,7 @@ class DoutPrefixPipe : public DoutPrefixProvider {
+     return out;
+   }
+   CephContext *get_cct() const override { return dpp.get_cct(); }
+-  unsigned get_subsys() const override { return dpp.get_subsys(); }
++  constexpr unsigned get_subsys() const override { return dpp.get_subsys(); }
+ 
+   virtual void add_prefix(std::ostream& out) const = 0;
+ };
+diff --git a/src/crimson/osd/pg.h b/src/crimson/osd/pg.h
+index d96db2e20..491878e96 100644
+--- a/src/crimson/osd/pg.h
++++ b/src/crimson/osd/pg.h
+@@ -141,7 +141,7 @@ public:
+   crimson::common::CephContext *get_cct() const final {
+     return shard_services.get_cct();
+   }
+-  unsigned get_subsys() const final {
++  constexpr unsigned get_subsys() const final {
+     return ceph_subsys_osd;
+   }
+ 
+diff --git a/src/osd/PG.h b/src/osd/PG.h
+index 2f8b59061..682ba70ed 100644
+--- a/src/osd/PG.h
++++ b/src/osd/PG.h
+@@ -204,7 +204,7 @@ public:
+   CephContext *get_cct() const override {
+     return cct;
+   }
+-  unsigned get_subsys() const override {
++  constexpr unsigned get_subsys() const override {
+     return ceph_subsys_osd;
+   }
+ 
+diff --git a/src/osd/PGLog.h b/src/osd/PGLog.h
+index a9281e1b5..2a4bee894 100644
+--- a/src/osd/PGLog.h
++++ b/src/osd/PGLog.h
+@@ -116,7 +116,7 @@ struct PGLog : DoutPrefixProvider {
+   std::ostream& gen_prefix(std::ostream& out) const override {
+     return out;
+   }
+-  unsigned get_subsys() const override {
++  constexpr unsigned get_subsys() const override {
+     return static_cast<unsigned>(ceph_subsys_osd);
+   }
+   CephContext *get_cct() const override {
+diff --git a/src/rgw/driver/dbstore/config/sqlite.cc b/src/rgw/driver/dbstore/config/sqlite.cc
+index a1b217735..9b4479890 100644
+--- a/src/rgw/driver/dbstore/config/sqlite.cc
++++ b/src/rgw/driver/dbstore/config/sqlite.cc
+@@ -42,7 +42,7 @@ struct Prefix : DoutPrefixPipe {
+   std::string_view prefix;
+   Prefix(const DoutPrefixProvider& dpp, std::string_view prefix)
+       : DoutPrefixPipe(dpp), prefix(prefix) {}
+-  unsigned get_subsys() const override { return dout_subsys; }
++  constexpr unsigned get_subsys() const override { return dout_subsys; }
+   void add_prefix(std::ostream& out) const override {
+     out << prefix;
+   }
+diff --git a/src/rgw/driver/rados/rgw_cr_rados.h b/src/rgw/driver/rados/rgw_cr_rados.h
+index 7bda18878..08f3d1528 100644
+--- a/src/rgw/driver/rados/rgw_cr_rados.h
++++ b/src/rgw/driver/rados/rgw_cr_rados.h
+@@ -98,7 +98,7 @@ protected:
+     }
+ 
+   CephContext *get_cct() const { return processor->cct; }
+-  unsigned get_subsys() const { return ceph_subsys_rgw; }
++  constexpr unsigned get_subsys() const { return ceph_subsys_rgw; }
+   std::ostream& gen_prefix(std::ostream& out) const { return out << "rgw async rados processor: ";}
+ 
+   } req_wq;
+diff --git a/src/rgw/driver/rados/rgw_data_sync.cc b/src/rgw/driver/rados/rgw_data_sync.cc
+index a5730e51d..cb80e4e02 100644
+--- a/src/rgw/driver/rados/rgw_data_sync.cc
++++ b/src/rgw/driver/rados/rgw_data_sync.cc
+@@ -3218,7 +3218,7 @@ void RGWDataSyncStatusManager::finalize()
+   error_logger = nullptr;
+ }
+ 
+-unsigned RGWDataSyncStatusManager::get_subsys() const
++constexpr unsigned RGWDataSyncStatusManager::get_subsys() const
+ {
+   return dout_subsys;
+ }
+@@ -6411,7 +6411,7 @@ int RGWBucketPipeSyncStatusManager::run(const DoutPrefixProvider *dpp)
+   return ret;
+ }
+ 
+-unsigned RGWBucketPipeSyncStatusManager::get_subsys() const
++constexpr unsigned RGWBucketPipeSyncStatusManager::get_subsys() const
+ {
+   return dout_subsys;
+ }
+diff --git a/src/rgw/driver/rados/rgw_data_sync.h b/src/rgw/driver/rados/rgw_data_sync.h
+index b9a39343f..a2cee4a57 100644
+--- a/src/rgw/driver/rados/rgw_data_sync.h
++++ b/src/rgw/driver/rados/rgw_data_sync.h
+@@ -531,7 +531,7 @@ public:
+ 
+   // implements DoutPrefixProvider
+   CephContext *get_cct() const override;
+-  unsigned get_subsys() const override;
++  constexpr unsigned get_subsys() const override;
+   std::ostream& gen_prefix(std::ostream& out) const override;
+ };
+ 
+@@ -828,7 +828,7 @@ public:
+ 
+   // implements DoutPrefixProvider
+   CephContext *get_cct() const override;
+-  unsigned get_subsys() const override;
++  constexpr unsigned get_subsys() const override;
+   std::ostream& gen_prefix(std::ostream& out) const override;
+ 
+   int init_sync_status(const DoutPrefixProvider *dpp);
+diff --git a/src/rgw/driver/rados/rgw_gc.cc b/src/rgw/driver/rados/rgw_gc.cc
+index bd16bde1b..13dcea25e 100644
+--- a/src/rgw/driver/rados/rgw_gc.cc
++++ b/src/rgw/driver/rados/rgw_gc.cc
+@@ -765,7 +765,7 @@ void RGWGC::stop_processor()
+   worker = NULL;
+ }
+ 
+-unsigned RGWGC::get_subsys() const
++constexpr unsigned RGWGC::get_subsys() const
+ {
+   return dout_subsys;
+ }
+diff --git a/src/rgw/driver/rados/rgw_gc.h b/src/rgw/driver/rados/rgw_gc.h
+index f3df64099..04ccac2bf 100644
+--- a/src/rgw/driver/rados/rgw_gc.h
++++ b/src/rgw/driver/rados/rgw_gc.h
+@@ -75,7 +75,7 @@ public:
+   void stop_processor();
+ 
+   CephContext *get_cct() const override { return store->ctx(); }
+-  unsigned get_subsys() const;
++  constexpr unsigned get_subsys() const;
+ 
+   std::ostream& gen_prefix(std::ostream& out) const;
+ 
+diff --git a/src/rgw/driver/rados/rgw_notify.cc b/src/rgw/driver/rados/rgw_notify.cc
+index b1835016e..994573764 100644
+--- a/src/rgw/driver/rados/rgw_notify.cc
++++ b/src/rgw/driver/rados/rgw_notify.cc
+@@ -74,7 +74,7 @@ public:
+ private:
+ 
+   CephContext *get_cct() const override { return cct; }
+-  unsigned get_subsys() const override { return dout_subsys; }
++  constexpr unsigned get_subsys() const override { return dout_subsys; }
+   std::ostream& gen_prefix(std::ostream& out) const override { return out << "rgw notify: "; }
+ 
+   // read the list of queues from the queue list object
+diff --git a/src/rgw/driver/rados/rgw_object_expirer_core.cc b/src/rgw/driver/rados/rgw_object_expirer_core.cc
+index d6beeeb06..f99f7cc79 100644
+--- a/src/rgw/driver/rados/rgw_object_expirer_core.cc
++++ b/src/rgw/driver/rados/rgw_object_expirer_core.cc
+@@ -431,7 +431,7 @@ CephContext *RGWObjectExpirer::OEWorker::get_cct() const
+   return cct; 
+ }
+ 
+-unsigned RGWObjectExpirer::OEWorker::get_subsys() const 
++constexpr unsigned RGWObjectExpirer::OEWorker::get_subsys() const 
+ {
+     return dout_subsys;
+ }
+diff --git a/src/rgw/driver/rados/rgw_object_expirer_core.h b/src/rgw/driver/rados/rgw_object_expirer_core.h
+index be63815c1..80496a9af 100644
+--- a/src/rgw/driver/rados/rgw_object_expirer_core.h
++++ b/src/rgw/driver/rados/rgw_object_expirer_core.h
+@@ -91,7 +91,7 @@ protected:
+     void stop();
+ 
+     CephContext *get_cct() const override;
+-    unsigned get_subsys() const override;
++    constexpr unsigned get_subsys() const override;
+     std::ostream& gen_prefix(std::ostream& out) const override;
+   };
+ 
+diff --git a/src/rgw/driver/rados/rgw_rados.cc b/src/rgw/driver/rados/rgw_rados.cc
+index 566b7d6c2..d3f5610f7 100644
+--- a/src/rgw/driver/rados/rgw_rados.cc
++++ b/src/rgw/driver/rados/rgw_rados.cc
+@@ -565,7 +565,7 @@ public:
+ 
+   // implements DoutPrefixProvider
+   CephContext *get_cct() const override { return store->ctx(); }
+-  unsigned get_subsys() const override
++  constexpr unsigned get_subsys() const override
+   {
+     return dout_subsys;
+   }
+diff --git a/src/rgw/driver/rados/rgw_reshard.cc b/src/rgw/driver/rados/rgw_reshard.cc
+index 25cb4df3c..96222ccd5 100644
+--- a/src/rgw/driver/rados/rgw_reshard.cc
++++ b/src/rgw/driver/rados/rgw_reshard.cc
+@@ -1408,7 +1408,7 @@ CephContext *RGWReshard::ReshardWorker::get_cct() const
+   return cct;
+ }
+ 
+-unsigned RGWReshard::ReshardWorker::get_subsys() const
++constexpr unsigned RGWReshard::ReshardWorker::get_subsys() const
+ {
+   return dout_subsys;
+ }
+diff --git a/src/rgw/driver/rados/rgw_reshard.h b/src/rgw/driver/rados/rgw_reshard.h
+index 7388c459e..403c0087e 100644
+--- a/src/rgw/driver/rados/rgw_reshard.h
++++ b/src/rgw/driver/rados/rgw_reshard.h
+@@ -212,7 +212,7 @@ protected:
+     void stop();
+ 
+     CephContext *get_cct() const override;
+-    unsigned get_subsys() const override;
++    constexpr unsigned get_subsys() const override;
+     std::ostream& gen_prefix(std::ostream& out) const override;
+   };
+ 
+diff --git a/src/rgw/driver/rados/rgw_sync.h b/src/rgw/driver/rados/rgw_sync.h
+index e6c255cc6..409a04092 100644
+--- a/src/rgw/driver/rados/rgw_sync.h
++++ b/src/rgw/driver/rados/rgw_sync.h
+@@ -297,7 +297,7 @@ public:
+ 
+   // implements DoutPrefixProvider
+   CephContext *get_cct() const override { return store->ctx(); }
+-  unsigned get_subsys() const override;
++  constexpr unsigned get_subsys() const override;
+   std::ostream& gen_prefix(std::ostream& out) const override;
+ 
+   void wakeup(int shard_id) { return master_log.wakeup(shard_id); }
+diff --git a/src/rgw/driver/rados/rgw_trim_bilog.cc b/src/rgw/driver/rados/rgw_trim_bilog.cc
+index 4e34abf51..5e0400966 100644
+--- a/src/rgw/driver/rados/rgw_trim_bilog.cc
++++ b/src/rgw/driver/rados/rgw_trim_bilog.cc
+@@ -1410,7 +1410,7 @@ CephContext* BucketTrimManager::get_cct() const
+   return impl->store->ctx();
+ }
+ 
+-unsigned BucketTrimManager::get_subsys() const
++constexpr unsigned BucketTrimManager::get_subsys() const
+ {
+   return dout_subsys;
+ }
+diff --git a/src/rgw/driver/rados/rgw_trim_bilog.h b/src/rgw/driver/rados/rgw_trim_bilog.h
+index 6a11d2476..8121bdea9 100644
+--- a/src/rgw/driver/rados/rgw_trim_bilog.h
++++ b/src/rgw/driver/rados/rgw_trim_bilog.h
+@@ -89,7 +89,7 @@ class BucketTrimManager : public BucketChangeObserver, public DoutPrefixProvider
+   RGWCoroutine* create_admin_bucket_trim_cr(RGWHTTPManager *http);
+ 
+   CephContext *get_cct() const override;
+-  unsigned get_subsys() const;
++  constexpr unsigned get_subsys() const;
+   std::ostream& gen_prefix(std::ostream& out) const;
+ };
+ 
+diff --git a/src/rgw/rgw_admin.cc b/src/rgw/rgw_admin.cc
+index 5cabd2a9b..73d9480ad 100644
+--- a/src/rgw/rgw_admin.cc
++++ b/src/rgw/rgw_admin.cc
+@@ -89,7 +89,7 @@ static constexpr auto dout_subsys = ceph_subsys_rgw;
+ static const DoutPrefixProvider* dpp() {
+   struct GlobalPrefix : public DoutPrefixProvider {
+     CephContext *get_cct() const override { return dout_context; }
+-    unsigned get_subsys() const override { return dout_subsys; }
++    constexpr unsigned get_subsys() const override { return dout_subsys; }
+     std::ostream& gen_prefix(std::ostream& out) const override { return out; }
+   };
+   static GlobalPrefix global_dpp;
+diff --git a/src/rgw/rgw_common.h b/src/rgw/rgw_common.h
+index 648b2e087..dc5b07ab4 100644
+--- a/src/rgw/rgw_common.h
++++ b/src/rgw/rgw_common.h
+@@ -1247,7 +1247,7 @@ struct req_state : DoutPrefixProvider {
+   // implements DoutPrefixProvider
+   std::ostream& gen_prefix(std::ostream& out) const override;
+   CephContext* get_cct() const override { return cct; }
+-  unsigned get_subsys() const override { return ceph_subsys_rgw; }
++  constexpr unsigned get_subsys() const override { return ceph_subsys_rgw; }
+ };
+ 
+ void set_req_state_err(req_state*, int);
+diff --git a/src/rgw/rgw_frontend.h b/src/rgw/rgw_frontend.h
+index ca1a8cba1..1aa1a4a4b 100644
+--- a/src/rgw/rgw_frontend.h
++++ b/src/rgw/rgw_frontend.h
+@@ -135,7 +135,7 @@ public:
+     return env.driver->ctx();
+   }
+ 
+-  unsigned get_subsys() const
++  constexpr unsigned get_subsys() const
+   {
+     return ceph_subsys_rgw;
+   }
+diff --git a/src/rgw/rgw_lc.cc b/src/rgw/rgw_lc.cc
+index 74bc8b12c..015e4b0c9 100644
+--- a/src/rgw/rgw_lc.cc
++++ b/src/rgw/rgw_lc.cc
+@@ -2341,7 +2341,7 @@ void RGWLC::stop_processor()
+   workers.clear();
+ }
+ 
+-unsigned RGWLC::get_subsys() const
++constexpr unsigned RGWLC::get_subsys() const
+ {
+   return dout_subsys;
+ }
+diff --git a/src/rgw/rgw_lc.h b/src/rgw/rgw_lc.h
+index bd8efd9b6..9044dcc2e 100644
+--- a/src/rgw/rgw_lc.h
++++ b/src/rgw/rgw_lc.h
+@@ -605,7 +605,7 @@ public:
+ 
+   CephContext *get_cct() const override { return cct; }
+   rgw::sal::Lifecycle* get_lc() const { return sal_lc.get(); }
+-  unsigned get_subsys() const;
++  constexpr unsigned get_subsys() const;
+   std::ostream& gen_prefix(std::ostream& out) const;
+ 
+   private:
+diff --git a/src/rgw/rgw_lib.h b/src/rgw/rgw_lib.h
+index 1ad54b49b..60a6b5272 100644
+--- a/src/rgw/rgw_lib.h
++++ b/src/rgw/rgw_lib.h
+@@ -34,7 +34,7 @@ namespace rgw {
+ 
+     rgw::LDAPHelper* get_ldh() { return main.get_ldh(); }
+     CephContext *get_cct() const override { return cct.get(); }
+-    unsigned get_subsys() const { return ceph_subsys_rgw; }
++    constexpr unsigned get_subsys() const { return ceph_subsys_rgw; }
+     std::ostream& gen_prefix(std::ostream& out) const { return out << "lib rgw: "; }
+ 
+     void set_fe(RGWLibFrontend* fe);
+diff --git a/src/rgw/rgw_log.cc b/src/rgw/rgw_log.cc
+index de67fcd4b..d5f1e8170 100644
+--- a/src/rgw/rgw_log.cc
++++ b/src/rgw/rgw_log.cc
+@@ -175,7 +175,7 @@ public:
+   }
+ 
+   CephContext *get_cct() const override { return cct; }
+-  unsigned get_subsys() const override { return dout_subsys; }
++  constexpr unsigned get_subsys() const override { return dout_subsys; }
+   std::ostream& gen_prefix(std::ostream& out) const override { return out << "rgw UsageLogger: "; }
+ };
+ 
+@@ -467,7 +467,7 @@ int OpsLogFile::log_json(req_state* s, bufferlist& bl)
+   return 0;
+ }
+ 
+-unsigned OpsLogFile::get_subsys() const {
++constexpr unsigned OpsLogFile::get_subsys() const {
+   return dout_subsys;
+ }
+ 
+diff --git a/src/rgw/rgw_log.h b/src/rgw/rgw_log.h
+index 1dd79273e..bf9b7a21f 100644
+--- a/src/rgw/rgw_log.h
++++ b/src/rgw/rgw_log.h
+@@ -254,7 +254,7 @@ public:
+   OpsLogFile(CephContext* cct, std::string& path, uint64_t max_data_size);
+   ~OpsLogFile() override;
+   CephContext *get_cct() const override { return cct; }
+-  unsigned get_subsys() const override;
++  constexpr unsigned get_subsys() const override;
+   std::ostream& gen_prefix(std::ostream& out) const override { return out << "rgw OpsLogFile: "; }
+   void reopen();
+   void start();
+diff --git a/src/rgw/rgw_op.h b/src/rgw/rgw_op.h
+index 2bffcddcc..1c7584fda 100644
+--- a/src/rgw/rgw_op.h
++++ b/src/rgw/rgw_op.h
+@@ -277,7 +277,7 @@ public:
+   // implements DoutPrefixProvider
+   std::ostream& gen_prefix(std::ostream& out) const override;
+   CephContext* get_cct() const override { return s->cct; }
+-  unsigned get_subsys() const override { return ceph_subsys_rgw; }
++  constexpr unsigned get_subsys() const override { return ceph_subsys_rgw; }
+ 
+   virtual dmc::client_id dmclock_client() { return dmc::client_id::metadata; }
+   virtual dmc::Cost dmclock_cost() { return 1; }
+diff --git a/src/rgw/rgw_period_pusher.cc b/src/rgw/rgw_period_pusher.cc
+index d9c899e5c..e46782730 100644
+--- a/src/rgw/rgw_period_pusher.cc
++++ b/src/rgw/rgw_period_pusher.cc
+@@ -158,7 +158,7 @@ class RGWPeriodPusher::CRThread : public DoutPrefixProvider {
+   }
+ 
+   CephContext *get_cct() const override { return cct; }
+-  unsigned get_subsys() const override { return dout_subsys; }
++  constexpr unsigned get_subsys() const override { return dout_subsys; }
+   std::ostream& gen_prefix(std::ostream& out) const override { return out << "rgw period pusher CR thread: "; }
+ };
+ 
+diff --git a/src/rgw/rgw_process.h b/src/rgw/rgw_process.h
+index 640f07842..aeaea09c2 100644
+--- a/src/rgw/rgw_process.h
++++ b/src/rgw/rgw_process.h
+@@ -66,7 +66,7 @@ protected:
+     }
+ 
+   CephContext *get_cct() const override { return process->cct; }
+-  unsigned get_subsys() const { return ceph_subsys_rgw; }
++  constexpr unsigned get_subsys() const { return ceph_subsys_rgw; }
+   std::ostream& gen_prefix(std::ostream& out) const { return out << "rgw request work queue: ";}
+ 
+   } req_wq;
+diff --git a/src/rgw/rgw_sync.cc b/src/rgw/rgw_sync.cc
+index b41d9c672..9d810e990 100644
+--- a/src/rgw/rgw_sync.cc
++++ b/src/rgw/rgw_sync.cc
+@@ -12,7 +12,7 @@ std::ostream&  RGWMetaSyncStatusManager::gen_prefix(std::ostream& out) const
+   return out << "meta sync: ";
+ }
+ 
+-unsigned RGWMetaSyncStatusManager::get_subsys() const
++constexpr unsigned RGWMetaSyncStatusManager::get_subsys() const
+ {
+   return dout_subsys;
+ }
+diff --git a/src/rgw/rgw_worker.h b/src/rgw/rgw_worker.h
+index eb2e55243..2ccb42939 100644
+--- a/src/rgw/rgw_worker.h
++++ b/src/rgw/rgw_worker.h
+@@ -50,7 +50,7 @@ class RGWRadosThread {
+     }
+ 
+   CephContext *get_cct() const { return cct; }
+-  unsigned get_subsys() const { return ceph_subsys_rgw; }
++  constexpr unsigned get_subsys() const { return ceph_subsys_rgw; }
+   std::ostream& gen_prefix(std::ostream& out) const { return out << "rgw rados thread: "; }
+ 
+   };
+diff --git a/src/rgw/services/svc_notify.cc b/src/rgw/services/svc_notify.cc
+index 43f84ed0a..8e3525a5e 100644
+--- a/src/rgw/services/svc_notify.cc
++++ b/src/rgw/services/svc_notify.cc
+@@ -45,7 +45,7 @@ class RGWWatcher : public DoutPrefixProvider , public librados::WatchCtx2 {
+   };
+ 
+   CephContext *get_cct() const override { return cct; }
+-  unsigned get_subsys() const override { return dout_subsys; }
++  constexpr unsigned get_subsys() const override { return dout_subsys; }
+   std::ostream& gen_prefix(std::ostream& out) const override {
+     return out << "rgw watcher librados: ";
+   }
+diff --git a/src/test/osd/test_ec_transaction.cc b/src/test/osd/test_ec_transaction.cc
+index 98669667a..b7d25da39 100644
+--- a/src/test/osd/test_ec_transaction.cc
++++ b/src/test/osd/test_ec_transaction.cc
+@@ -21,7 +21,7 @@
+ struct mydpp : public DoutPrefixProvider {
+   std::ostream& gen_prefix(std::ostream& out) const override { return out << "foo"; }
+   CephContext *get_cct() const override { return g_ceph_context; }
+-  unsigned get_subsys() const override { return ceph_subsys_osd; }
++  constexpr unsigned get_subsys() const override { return ceph_subsys_osd; }
+ } dpp;
+ 
+ #define dout_context g_ceph_context
+diff --git a/src/test/rgw/rgw_cr_test.cc b/src/test/rgw/rgw_cr_test.cc
+index dc5d25d23..c9736edb6 100644
+--- a/src/test/rgw/rgw_cr_test.cc
++++ b/src/test/rgw/rgw_cr_test.cc
+@@ -31,7 +31,7 @@ static rgw::sal::RadosStore* store = nullptr;
+ static const DoutPrefixProvider* dpp() {
+   struct GlobalPrefix : public DoutPrefixProvider {
+     CephContext *get_cct() const override { return g_ceph_context; }
+-    unsigned get_subsys() const override { return dout_subsys; }
++    constexpr unsigned get_subsys() const override { return dout_subsys; }
+     std::ostream& gen_prefix(std::ostream& out) const override { return out; }
+   };
+   static GlobalPrefix global_dpp;

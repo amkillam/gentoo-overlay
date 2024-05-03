@@ -1,0 +1,18 @@
+diff --git a/src/blk/CMakeLists.txt b/src/blk/CMakeLists.txt
+index 5d9fd6a..663eaab 100644
+--- a/src/blk/CMakeLists.txt
++++ b/src/blk/CMakeLists.txt
+@@ -57,5 +57,12 @@ if(WITH_EVENTTRACE)
+ endif()
+ 
+ if(WITH_LIBURING)
+-  target_link_libraries(blk PRIVATE uring::uring)
++  if(WITH_SYSTEM_LIBURING)
++	list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}../../cmake/modules/")
++	pkg_check_modules(URING REQUIRED liburing)
++  else()
++    include(Builduring)
++    build_uring()
++  endif()
++  target_link_libraries(blk PRIVATE ${URING_LIBRARIES})
+ endif()

@@ -1,0 +1,17 @@
+[Unit]
+Description=Jackett Daemon
+After=network.target
+
+[Service]
+SyslogIdentifier=jackett
+Restart=always
+RestartSec=5
+Type=simple
+WorkingDirectory=/usr/share/jackett-9999
+Environment="DOTNET_EnableDiagnostics=0"
+ExecStart=/bin/sh /usr/sbin/jackett --NoRestart
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+

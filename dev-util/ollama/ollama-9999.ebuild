@@ -99,7 +99,6 @@ acct-group/ollama
 PATCHES=(
 	"${FILESDIR}/${P}-buildgen.patch"
 	"${FILESDIR}/${P}-amdgpu.patch"
-	"${FILESDIR}/${P}-vulkan-support.patch"
 )
 
 src_unpack() {
@@ -109,6 +108,10 @@ src_unpack() {
 	sed -i 's/ -Werror//g' "${S}/llm/llama.cpp/kompute/CMakeLists.txt"
 }
 
+src_prepare() {
+	use vulkan && eapply "${FILESDIR}/${P}-vulkan-support.patch"
+	eapply_user
+}
 src_compile() {
 
 	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
@@ -117,7 +120,7 @@ src_compile() {
 	export CGO_LDFLAGS="${LDFLAGS}"
 
 	#CGO does not work well with line breaks in env vars
-	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on -DLLAMA_F16C=off -DLLAMA_CURL=on -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off"
+	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release"
 
 	use ccache && export CMAKE_DEFS+=" -DLLAMA_CCACHE=on"
 	use lto && export CMAKE_DEFS+=" -DLLAMA_LTO=on"
@@ -125,8 +128,18 @@ src_compile() {
 
 	use metal && export CMAKE_DEFS+=" -DLLAMA_METAL=on -DLLAMA_ACCELERATE=on -DGGML_USE_METAL=ON"
 
-	use opencl && export CMAKE_DEFS+=" -DLLAMA_CLBLAST=on -DGGML_USE_CLBLAST=ON"
-	use rocm && export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on" &&
+	use opencl && export CMAKE_DEFS+=" -DLLAMA_CLBLAST=on -DGGML_USE_CLBLAST=ON" &&
+		export CGO_LDFLAGS+=" -lOpenCL" &&
+		if [ -f /lib64/libclblast.so ]; then
+			export CGO_LDFLAGS+=" -lclblast"
+		elif [ -f /lib64/libclBLAS.so ]; then
+			export CGO_LDFLAGS+=" -lclBLAS"
+		else
+			einfo "opencl USE flag requested but neither clBLAS nor clblast libraries installed! Exiting..."
+			exit 0
+		fi &&
+		use rocm && export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on" &&
+		export CGO_LDFLAGS+=" -lhip" &&
 		use uma && export CMAKE_DEFS+=" -DLLAMA_HIP_UMA=on"
 
 	use cuda && export CMAKE_DEFS+=" -DLLAMA_CUDA=on -DLLAMA_CUDA_FORCE_DMMV=on -DLLAMA_CUDA_FORCE_MMQ=on -DLLAMA_CUDA_F16=off -DGGML_USE_CUDA=ON"
@@ -136,7 +149,7 @@ src_compile() {
 		export EXTRA_LIBS="-lvulkan" &&
 		export CGO_LDFLAGS+=" -lvulkan"
 	use mpi && export CMAKE_DEFS+=" -DLLAMA_MPI=on"
-	use sycl && export CMAKE_DEFS+=" -DLLAMA_SYCL=on -DGGML_USE_SYCL=ON"
+	use sycl && export CMAKE_DEFS+=" -DLLAMA_SYCL=on -DGGML_USE_SYCL=ON" && export CGO_CFLAGS+=" -fsycl" && export CGO_CXXFLAGS+=" -fsycl" && export CGO_CPPFLAGS+=" -fsycl"
 	use kompute && export CMAKE_DEFS+=" -DLLAMA_KOMPUTE=on -DKOMPUTE_OPT_USE_BUILT_IN_SPDLOG=OFF -DKOMPUTE_OPT_USE_BUILT_IN_FMT=OFF -DKOMPUTE_OPT_USE_BUILT_IN_GOOGLE_TEST=OFF -DKOMPUTE_OPT_USE_BUILT_IN_PYBIND11=OFF -DKOMPUTE_OPT_USE_BUILT_IN_VULKAN_HEADER=OFF -DKOMPUTE_OPT_DISABLE_VULKAN_VERSION_CHECK=ON -DGGML_USE_CLBLAST=ON"
 	use hbm && export CMAKE_DEFS+=" -DLLAMA_CPU_HBM=on"
 

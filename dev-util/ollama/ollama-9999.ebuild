@@ -132,7 +132,7 @@ src_compile() {
 
 	use cuda && export CMAKE_DEFS+=" -DLLAMA_CUDA=on -DLLAMA_CUDA_FORCE_DMMV=on -DLLAMA_CUDA_FORCE_MMQ=on -DLLAMA_CUDA_F16=off -DGGML_USE_CUDA=ON"
 
-	use vulkan && export CMAKE_DEFS+=" -DLLAMA_VULKAN=yes -DGGML_USE_VULKAN=ON"
+	use vulkan && export CMAKE_DEFS+=" -DLLAMA_VULKAN=ON -DGGML_USE_VULKAN=ON"
 	use mpi && export CMAKE_DEFS+=" -DLLAMA_MPI=on"
 	use sycl && export CMAKE_DEFS+=" -DLLAMA_SYCL=on -DGGML_USE_SYCL=ON"
 	use kompute && export CMAKE_DEFS+=" -DLLAMA_KOMPUTE=on -DKOMPUTE_OPT_USE_BUILT_IN_SPDLOG=OFF -DKOMPUTE_OPT_USE_BUILT_IN_FMT=OFF -DKOMPUTE_OPT_USE_BUILT_IN_GOOGLE_TEST=OFF -DKOMPUTE_OPT_USE_BUILT_IN_PYBIND11=OFF -DKOMPUTE_OPT_USE_BUILT_IN_VULKAN_HEADER=OFF -DKOMPUTE_OPT_DISABLE_VULKAN_VERSION_CHECK=ON -DGGML_USE_CLBLAST=ON"
@@ -148,7 +148,7 @@ src_compile() {
 
 	use test && export CMAKE_DEFS+=" -DLLAMA_BUILD_TESTS=on -DKOMPUTE_OPT_BUILD_TESTS=ON"
 
-	#export OLLAMA_SKIP_CPU_GENERATE=yes
+	#export OLLAMA_SKIP_CPU_GENERATE=ON
 	export OLLAMA_CUSTOM_CPU_DEFS="${CMAKE_DEFS}"
 	export CMAKE_COMMON_DEFS="${CMAKE_DEFS}"
 	export CGO_CFLAGS+=" ${CMAKE_DEFS}"
@@ -160,7 +160,10 @@ src_compile() {
 		sed -i 's/ -Werror=implicit-function-declaration//g' "${file}"
 		sed -i 's/-Werror//g' "${file}"
 	done
-	#sed -i 's/build\/linux\/\*\/\*\/bin\/\*/build\/linux\/*\/bin\/*/g' "${S}/llm/llm_linux.go"
+
+	use kompute && ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a ${S}/llm/build/linux/x86_64_static/kompute/src/CMakeFiles/kompute.dir/*.o &&
+		ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a ${S}/llm/build/linux/x86_64_static/kompute/src/logger/CMakeFiles/kp_logger.dir/Logger.cpp.o
+
 	ego build .
 }
 

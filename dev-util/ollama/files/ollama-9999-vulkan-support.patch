@@ -1,0 +1,107 @@
+diff --git a/gpu/amd_common.go b/gpu/amd_common.go
+index 6fa4fce..b87a957 100644
+--- a/gpu/amd_common.go
++++ b/gpu/amd_common.go
+@@ -48,6 +48,19 @@ func rocmGetVisibleDevicesEnv(gpuInfo []GpuInfo) (string, string) {
+ 	return "HIP_VISIBLE_DEVICES", strings.Join(ids, ",")
+ }
+ 
++func vulkanGetVisibleDevicesEnv(gpuInfo []GpuInfo) (string, string) {
++	ids := []string{}
++	for _, info := range gpuInfo {
++		if info.Library != "vulkan" {
++			// TODO shouldn't happen if things are wired correctly...
++			slog.Debug("vulkanGetVisibleDevicesEnv skipping over non-vulkan device", "library", info.Library)
++			continue
++		}
++		ids = append(ids, info.ID)
++	}
++	return "HIP_VISIBLE_DEVICES", strings.Join(ids, ",")
++}
++
+ func commonAMDValidateLibDir() (string, error) {
+ 	// We try to favor system paths first, so that we can wire up the subprocess to use
+ 	// the system version.  Only use our bundled version if the system version doesn't work
+diff --git a/gpu/amd_linux.go b/gpu/amd_linux.go
+index 7aa8905..4ccfb08 100644
+--- a/gpu/amd_linux.go
++++ b/gpu/amd_linux.go
+@@ -7,6 +7,7 @@ import (
+ 	"io"
+ 	"log/slog"
+ 	"os"
++	"os/exec"
+ 	"path/filepath"
+ 	"slices"
+ 	"strconv"
+@@ -336,3 +337,19 @@ func AMDDriverVersion() (string, error) {
+ 	}
+ 	return strings.TrimSpace(string(verString)), nil
+ }
++
++func VulkanDetected() bool {
++	// Run the "vulkaninfo" command and capture its output
++	cmd := exec.Command("vulkaninfo")
++	output, err := cmd.CombinedOutput()
++	if err != nil {
++		return false
++	}
++
++	// Check if the output contains relevant information
++	if len(output) > 0 {
++		return true
++	} else {
++		return false
++	}
++}
+diff --git a/gpu/gpu.go b/gpu/gpu.go
+index 9b91501..f4f2b2c 100644
+--- a/gpu/gpu.go
++++ b/gpu/gpu.go
+@@ -10,6 +10,7 @@ package gpu
+ 
+ */
+ import "C"
++
+ import (
+ 	"fmt"
+ 	"log/slog"
+@@ -68,7 +69,6 @@ var CudaTegra string = os.Getenv("JETSON_JETPACK")
+ 
+ // Note: gpuMutex must already be held
+ func initGPUHandles() *handles {
+-
+ 	// TODO - if the ollama build is CPU only, don't do these checks as they're irrelevant and confusing
+ 
+ 	gpuHandles := &handles{}
+@@ -159,7 +159,20 @@ func GetGPUInfo() GpuInfoList {
+ 		resp = append(resp, gpuInfo)
+ 	}
+ 
+-	// Then AMD
++	// Then Vulkan
++
++	if VulkanDetected() {
++		slog.Info("Vulkan Detected!")
++		gpuInfo := GpuInfo{
++			Library: "vulkan",
++		}
++		gpuInfo.FreeMemory = uint64(3 * 1024 * 1024 * 1024)
++		gpuInfo.TotalMemory = uint64(3 * 1024 * 1024 * 1024)
++		resp = append(resp, gpuInfo)
++		return resp
++	}
++
++	// Then ROCM
+ 	resp = append(resp, AMDGetGPUInfo()...)
+ 
+ 	if len(resp) == 0 {
+@@ -287,6 +300,8 @@ func (l GpuInfoList) GetVisibleDevicesEnv() (string, string) {
+ 		return cudaGetVisibleDevicesEnv(l)
+ 	case "rocm":
+ 		return rocmGetVisibleDevicesEnv(l)
++	case "vulkan":
++		return vulkanGetVisibleDevicesEnv(l)
+ 	default:
+ 		slog.Debug("no filter required for library " + l[0].Library)
+ 		return "", ""

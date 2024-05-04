@@ -100,7 +100,6 @@ PATCHES=(
 	"${FILESDIR}/${P}-buildgen.patch"
 	"${FILESDIR}/${P}-amdgpu.patch"
 	"${FILESDIR}/${P}-vulkan-support.patch"
-	#	kompute? "${FILESDIR}/${P}-kompute-support.patch"
 )
 
 src_unpack() {
@@ -112,18 +111,13 @@ src_unpack() {
 
 src_compile() {
 
-	#	export MK_CFLAGS="${CFLAGS}"
-	#	export MK_CXXFLAGS="${CXXFLAGS}"
-	#	export MK_CPPFLAGS="${CPPFLAGS}"
-	#	export MK_LDFLAGS="${LDFLAGS}"
-
 	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_LDFLAGS="${LDFLAGS}"
 
 	#CGO does not work well with line breaks in env vars
-	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on -DLLAMA_F16=off -DLLAMA_CURL=on -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off"
+	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on -DLLAMA_F16C=off -DLLAMA_CURL=on -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off"
 
 	use ccache && export CMAKE_DEFS+=" -DLLAMA_CCACHE=on"
 	use lto && export CMAKE_DEFS+=" -DLLAMA_LTO=on"
@@ -156,7 +150,6 @@ src_compile() {
 
 	use test && export CMAKE_DEFS+=" -DLLAMA_BUILD_TESTS=on -DKOMPUTE_OPT_BUILD_TESTS=ON"
 
-	#export OLLAMA_SKIP_CPU_GENERATE=ON
 	export OLLAMA_CUSTOM_CPU_DEFS="${CMAKE_DEFS}"
 	export CMAKE_COMMON_DEFS="${CMAKE_DEFS}"
 	export CGO_CFLAGS+=" ${CMAKE_DEFS}"

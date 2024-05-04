@@ -112,10 +112,10 @@ src_compile() {
 	#	export MK_CPPFLAGS="${CPPFLAGS}"
 	#	export MK_LDFLAGS="${LDFLAGS}"
 
-	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument"
-	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument"
-	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument"
-	export CGO_LDFLAGS="${LDFLAGS}"
+	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_LDFLAGS="${LDFLAGS} -lvulkan"
 
 	#CGO does not work well with line breaks in env vars
 	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on -DLLAMA_F16=off -DLLAMA_CURL=on -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off"
@@ -132,7 +132,9 @@ src_compile() {
 
 	use cuda && export CMAKE_DEFS+=" -DLLAMA_CUDA=on -DLLAMA_CUDA_FORCE_DMMV=on -DLLAMA_CUDA_FORCE_MMQ=on -DLLAMA_CUDA_F16=off -DGGML_USE_CUDA=ON"
 
-	use vulkan && export CMAKE_DEFS+=" -DLLAMA_VULKAN=ON -DGGML_USE_VULKAN=ON"
+	use vulkan &&
+		export CMAKE_DEFS+=" -DLLAMA_VULKAN=ON -DGGML_USE_VULKAN=ON" &&
+		export EXTRA_LIBS="-lvulkan"
 	use mpi && export CMAKE_DEFS+=" -DLLAMA_MPI=on"
 	use sycl && export CMAKE_DEFS+=" -DLLAMA_SYCL=on -DGGML_USE_SYCL=ON"
 	use kompute && export CMAKE_DEFS+=" -DLLAMA_KOMPUTE=on -DKOMPUTE_OPT_USE_BUILT_IN_SPDLOG=OFF -DKOMPUTE_OPT_USE_BUILT_IN_FMT=OFF -DKOMPUTE_OPT_USE_BUILT_IN_GOOGLE_TEST=OFF -DKOMPUTE_OPT_USE_BUILT_IN_PYBIND11=OFF -DKOMPUTE_OPT_USE_BUILT_IN_VULKAN_HEADER=OFF -DKOMPUTE_OPT_DISABLE_VULKAN_VERSION_CHECK=ON -DGGML_USE_CLBLAST=ON"

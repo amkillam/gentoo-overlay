@@ -137,8 +137,8 @@ src_compile() {
 		else
 			einfo "opencl USE flag requested but neither clBLAS nor clblast libraries installed! Exiting..."
 			exit 0
-		fi &&
-		use rocm && export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on" &&
+		fi
+	use rocm && export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on" &&
 		export CGO_LDFLAGS+=" -lhip" &&
 		use uma && export CMAKE_DEFS+=" -DLLAMA_HIP_UMA=on"
 

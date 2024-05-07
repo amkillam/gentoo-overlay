@@ -3,7 +3,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..12} )
+PYTHON_COMPAT=(python3_{9..12})
 
 inherit bash-completion-r1 check-reqs estack flag-o-matic llvm multiprocessing \
 	multilib multilib-build python-any-r1 rust-toolchain toolchain-funcs git-r3
@@ -15,9 +15,9 @@ DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="https://www.rust-lang.org/"
 
 # keep in sync with llvm ebuild of the same version as bundled one.
-ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM AVR BPF Hexagon Lanai Mips MSP430
-	NVPTX PowerPC RISCV Sparc SystemZ WebAssembly X86 XCore )
-ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
+ALL_LLVM_TARGETS=(AArch64 AMDGPU ARM AVR BPF Hexagon Lanai Mips MSP430
+	NVPTX PowerPC RISCV Sparc SystemZ WebAssembly X86 XCore)
+ALL_LLVM_TARGETS=("${ALL_LLVM_TARGETS[@]/#/llvm_targets_}")
 LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/(-)?}
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
@@ -25,7 +25,7 @@ LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 IUSE="+clippy cpu_flags_x86_sse2 debug dist doc llvm-libunwind miri parallel-compiler profiler rls rustfmt rust-src +rust-analyzer +system-llvm test wasm ${ALL_LLVM_TARGETS[*]}"
 
 # List all the working slots in LLVM_VALID_SLOTS, newest first.
-LLVM_VALID_SLOTS=( 17 )
+LLVM_VALID_SLOTS=(17)
 LLVM_MAX_SLOT="${LLVM_VALID_SLOTS[0]}"
 
 # splitting usedeps needed to avoid CI/pkgcheck's UncheckableDep limitation
@@ -41,7 +41,7 @@ for _s in ${LLVM_VALID_SLOTS[@]}; do
 done
 unset _s _x
 LLVM_DEPEND+=" )
-	<sys-devel/llvm-$(( LLVM_MAX_SLOT + 1 )):=
+	<sys-devel/llvm-$((LLVM_MAX_SLOT + 1)):=
 "
 
 BDEPEND="${PYTHON_DEPS}
@@ -127,28 +127,28 @@ pre_build_checks() {
 	local M=9192
 	# multiply requirements by 1.3 if we are doing x86-multilib
 	if use amd64; then
-		M=$(( $(usex abi_x86_32 13 10) * ${M} / 10 ))
+		M=$(($(usex abi_x86_32 13 10) * ${M} / 10))
 	fi
-	M=$(( $(usex clippy 128 0) + ${M} ))
-	M=$(( $(usex miri 128 0) + ${M} ))
-	M=$(( $(usex rls 512 0) + ${M} ))
-	M=$(( $(usex rustfmt 256 0) + ${M} ))
+	M=$(($(usex clippy 128 0) + ${M}))
+	M=$(($(usex miri 128 0) + ${M}))
+	M=$(($(usex rls 512 0) + ${M}))
+	M=$(($(usex rustfmt 256 0) + ${M}))
 	# add 2G if we compile llvm and 256M per llvm_target
 	if ! use system-llvm; then
-		M=$(( 2048 + ${M} ))
+		M=$((2048 + ${M}))
 		local ltarget
 		for ltarget in ${ALL_LLVM_TARGETS[@]}; do
-			M=$(( $(usex ${ltarget} 256 0) + ${M} ))
+			M=$(($(usex ${ltarget} 256 0) + ${M}))
 		done
 	fi
-	M=$(( $(usex wasm 256 0) + ${M} ))
-	M=$(( $(usex debug 2 1) * ${M} ))
+	M=$(($(usex wasm 256 0) + ${M}))
+	M=$(($(usex debug 2 1) * ${M}))
 	eshopts_push -s extglob
 	if is-flagq '-g?(gdb)?([1-9])'; then
-		M=$(( 15 * ${M} / 10 ))
+		M=$((15 * ${M} / 10))
 	fi
 	eshopts_pop
-	M=$(( $(usex doc 256 0) + ${M} ))
+	M=$(($(usex doc 256 0) + ${M}))
 	CHECKREQS_DISK_BUILD=${M}M check-reqs_pkg_${EBUILD_PHASE}
 }
 
@@ -183,12 +183,12 @@ pkg_setup() {
 src_unpack() {
 	EGIT_REPO_URI="https://github.com/rust-lang/rust.git"
 	EGIT_BRANCH="master"
-	EGIT_SUBMODULES=( '*' )
+	EGIT_SUBMODULES=('*')
 	EGIT_CHECKOUT_DIR="${WORKDIR}/${P}"
 
 	git-r3_src_unpack
 	default
-	
+
 	cd ${S}
 
 	if use system-llvm; then
@@ -204,7 +204,7 @@ src_unpack() {
 		rm -rf src/ci
 	fi
 
-	# Remove other unused vendored libraries 
+	# Remove other unused vendored libraries
 	rm -rf vendor/*jemalloc-sys*/jemalloc/
 	rm -rf vendor/libmimalloc-sys/c_src/mimalloc/
 	rm -rf vendor/openssl-src/openssl/
@@ -221,7 +221,7 @@ src_unpack() {
 	# it's a shebang and make them executable. Then brp-mangle-shebangs gets upset...
 	find -name '*.rs' -type f -perm /111 -exec chmod -v -x '{}' '+'
 
-	eapply "${FILESDIR}"/0002-compiler-Change-LLVM-targets.patch
+	#	eapply "${FILESDIR}"/0002-compiler-Change-LLVM-targets.patch
 
 	local rust_target="" rust_targets="" arch_cflags
 
@@ -243,8 +243,7 @@ src_unpack() {
 	rust_target="$(rust_abi)"
 
 	local cm_btype="$(usex debug DEBUG RELEASE)"
-	cat <<- _EOF_ > "${S}"/config.toml
-		changelog-seen = 2
+	cat <<-_EOF_ >"${S}"/config.toml
 		[llvm]
 		download-ci-llvm = false
 		optimize = true
@@ -340,11 +339,11 @@ src_unpack() {
 		rust_target=$(rust_abi $(get_abi_CHOST ${v##*.}))
 		arch_cflags="$(get_abi_CFLAGS ${v##*.})"
 
-		cat <<- _EOF_ >> "${S}"/config.env
+		cat <<-_EOF_ >>"${S}"/config.env
 			CFLAGS_${rust_target}=${arch_cflags}
 		_EOF_
 
-		cat <<- _EOF_ >> "${S}"/config.toml
+		cat <<-_EOF_ >>"${S}"/config.toml
 			[target.${rust_target}]
 			ar = "$(tc-getAR)"
 			cc = "$(tc-getCC)"
@@ -356,12 +355,12 @@ src_unpack() {
 		# by default librustc_target/spec/linux_musl_base.rs sets base.crt_static_default = true;
 		# but we patch it and set to false here as well
 		if use elibc_musl; then
-			cat <<- _EOF_ >> "${S}"/config.toml
+			cat <<-_EOF_ >>"${S}"/config.toml
 				crt-static = false
 			_EOF_
 		fi
 		if use system-llvm; then
-			cat <<- _EOF_ >> "${S}"/config.toml
+			cat <<-_EOF_ >>"${S}"/config.toml
 				llvm-config = "$(get_llvm_prefix "${LLVM_MAX_SLOT}")/bin/llvm-config"
 			_EOF_
 		fi
@@ -369,64 +368,64 @@ src_unpack() {
 
 	if [[ -n ${I_KNOW_WHAT_I_AM_DOING_CROSS} ]]; then # whitespace intentionally shifted below
 
-	# BUG: we can't pass host flags to cross compiler, so just filter for now
-	# BUG: this should be more fine-grained.
-	filter-flags '-mcpu=*' '-march=*' '-mtune=*'
+		# BUG: we can't pass host flags to cross compiler, so just filter for now
+		# BUG: this should be more fine-grained.
+		filter-flags '-mcpu=*' '-march=*' '-mtune=*'
 
-	local cross_target_spec
-	for cross_target_spec in "${RUST_CROSS_TARGETS[@]}";do
-		# extracts first element form <LLVM target>:<rust-target>:<CTARGET>
-		local cross_llvm_target="${cross_target_spec%%:*}"
-		# extracts toolchain triples, <rust-target>:<CTARGET>
-		local cross_triples="${cross_target_spec#*:}"
-		# extracts first element after before : separator
-		local cross_rust_target="${cross_triples%%:*}"
-		# extracts last element after : separator
-		local cross_toolchain="${cross_triples##*:}"
-		use llvm_targets_${cross_llvm_target} || die "need llvm_targets_${cross_llvm_target} target enabled"
-		command -v ${cross_toolchain}-gcc > /dev/null 2>&1 || die "need ${cross_toolchain} cross toolchain"
+		local cross_target_spec
+		for cross_target_spec in "${RUST_CROSS_TARGETS[@]}"; do
+			# extracts first element form <LLVM target>:<rust-target>:<CTARGET>
+			local cross_llvm_target="${cross_target_spec%%:*}"
+			# extracts toolchain triples, <rust-target>:<CTARGET>
+			local cross_triples="${cross_target_spec#*:}"
+			# extracts first element after before : separator
+			local cross_rust_target="${cross_triples%%:*}"
+			# extracts last element after : separator
+			local cross_toolchain="${cross_triples##*:}"
+			use llvm_targets_${cross_llvm_target} || die "need llvm_targets_${cross_llvm_target} target enabled"
+			command -v ${cross_toolchain}-gcc >/dev/null 2>&1 || die "need ${cross_toolchain} cross toolchain"
 
-		cat <<- _EOF_ >> "${S}"/config.toml
-			[target.${cross_rust_target}]
-			ar = "${cross_toolchain}-ar"
-			cc = "${cross_toolchain}-gcc"
-			cxx = "${cross_toolchain}-g++"
-			linker = "${cross_toolchain}-gcc"
-			ranlib = "${cross_toolchain}-ranlib"
-		_EOF_
-		if use system-llvm; then
-			cat <<- _EOF_ >> "${S}"/config.toml
-				llvm-config = "$(get_llvm_prefix "${LLVM_MAX_SLOT}")/bin/llvm-config"
+			cat <<-_EOF_ >>"${S}"/config.toml
+				[target.${cross_rust_target}]
+				ar = "${cross_toolchain}-ar"
+				cc = "${cross_toolchain}-gcc"
+				cxx = "${cross_toolchain}-g++"
+				linker = "${cross_toolchain}-gcc"
+				ranlib = "${cross_toolchain}-ranlib"
 			_EOF_
-		fi
-		if [[ "${cross_toolchain}" == *-musl* ]]; then
-			cat <<- _EOF_ >> "${S}"/config.toml
-				musl-root = "$(${cross_toolchain}-gcc -print-sysroot)/usr"
-			_EOF_
-		fi
+			if use system-llvm; then
+				cat <<-_EOF_ >>"${S}"/config.toml
+					llvm-config = "$(get_llvm_prefix "${LLVM_MAX_SLOT}")/bin/llvm-config"
+				_EOF_
+			fi
+			if [[ "${cross_toolchain}" == *-musl* ]]; then
+				cat <<-_EOF_ >>"${S}"/config.toml
+					musl-root = "$(${cross_toolchain}-gcc -print-sysroot)/usr"
+				_EOF_
+			fi
 
-		# append cross target to "normal" target list
-		# example 'target = ["powerpc64le-unknown-linux-gnu"]'
-		# becomes 'target = ["powerpc64le-unknown-linux-gnu","aarch64-unknown-linux-gnu"]'
+			# append cross target to "normal" target list
+			# example 'target = ["powerpc64le-unknown-linux-gnu"]'
+			# becomes 'target = ["powerpc64le-unknown-linux-gnu","aarch64-unknown-linux-gnu"]'
 
-		rust_targets="${rust_targets},\"${cross_rust_target}\""
-		sed -i "/^target = \[/ s#\[.*\]#\[${rust_targets}\]#" config.toml || die
+			rust_targets="${rust_targets},\"${cross_rust_target}\""
+			sed -i "/^target = \[/ s#\[.*\]#\[${rust_targets}\]#" config.toml || die
 
-		ewarn
-		ewarn "Enabled ${cross_rust_target} rust target"
-		ewarn "Using ${cross_toolchain} cross toolchain"
-		ewarn
-		if ! has_version -b 'sys-devel/binutils[multitarget]' ; then
-			ewarn "'sys-devel/binutils[multitarget]' is not installed"
-			ewarn "'strip' will be unable to strip cross libraries"
-			ewarn "cross targets will be installed with full debug information"
-			ewarn "enable 'multitarget' USE flag for binutils to be able to strip object files"
 			ewarn
-			ewarn "Alternatively llvm-strip can be used, it supports stripping any target"
-			ewarn "define STRIP=\"llvm-strip\" to use it (experimental)"
+			ewarn "Enabled ${cross_rust_target} rust target"
+			ewarn "Using ${cross_toolchain} cross toolchain"
 			ewarn
-		fi
-	done
+			if ! has_version -b 'sys-devel/binutils[multitarget]'; then
+				ewarn "'sys-devel/binutils[multitarget]' is not installed"
+				ewarn "'strip' will be unable to strip cross libraries"
+				ewarn "cross targets will be installed with full debug information"
+				ewarn "enable 'multitarget' USE flag for binutils to be able to strip object files"
+				ewarn
+				ewarn "Alternatively llvm-strip can be used, it supports stripping any target"
+				ewarn "define STRIP=\"llvm-strip\" to use it (experimental)"
+				ewarn
+			fi
+		done
 	fi # I_KNOW_WHAT_I_AM_DOING_CROSS
 
 	einfo "Rust configured with the following flags:"
@@ -443,19 +442,18 @@ src_unpack() {
 
 	# we need \n IFS to have config.env with spaces loaded properly. #734018
 	(
-	IFS=$'\n'
-	env $(cat "${S}"/config.env) RUST_BACKTRACE=1\
-		"${EPYTHON}" ./x.py build -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
+		IFS=$'\n'
+		env $(cat "${S}"/config.env) RUST_BACKTRACE=1 "${EPYTHON}" ./x.py build -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
 	)
 
-	mv ${HOME}/.cargo ${S}/.cargo ||die "INSTALL VENDORING .cargo FAILED"
+	mv ${HOME}/.cargo ${S}/.cargo || die "INSTALL VENDORING .cargo FAILED"
 
 	# can't use image here because we need src_install
 	mkdir -p "${S}"/instol || die
-  (
-	IFS=$'\n'
-	env $(cat "${S}"/config.env) DESTDIR="${S}"/instol \
-		"${EPYTHON}" ./x.py install	-vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
+	(
+		IFS=$'\n'
+		env $(cat "${S}"/config.env) DESTDIR="${S}"/instol \
+			"${EPYTHON}" ./x.py install -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
 	)
 }
 
@@ -477,11 +475,11 @@ src_install() {
 		rust-lldb
 	)
 
-	use clippy && symlinks+=( clippy-driver cargo-clippy )
-	use miri && symlinks+=( miri cargo-miri )
-	use profiler && symlinks+=( rust-demangler )
-	use rustfmt && symlinks+=( rustfmt cargo-fmt )
-	use rust-analyzer && symlinks+=( rust-analyzer )
+	use clippy && symlinks+=(clippy-driver cargo-clippy)
+	use miri && symlinks+=(miri cargo-miri)
+	use profiler && symlinks+=(rust-demangler)
+	use rustfmt && symlinks+=(rustfmt cargo-fmt)
+	use rust-analyzer && symlinks+=(rust-analyzer)
 
 	einfo "installing eselect-rust symlinks and paths: ${symlinks[@]}"
 	local i
@@ -517,7 +515,7 @@ src_install() {
 	rm -rf "${ED}/usr/lib/${PN}/${PV}"/*.old || die
 	rm -rf "${ED}/usr/lib/${PN}/${PV}/doc"/*.old || die
 
-	cat <<-_EOF_ > "${T}/provider-${P}"
+	cat <<-_EOF_ >"${T}/provider-${P}"
 		/usr/bin/cargo
 		/usr/bin/rustdoc
 		/usr/bin/rust-gdb
@@ -531,22 +529,22 @@ src_install() {
 	_EOF_
 
 	if use clippy; then
-		echo /usr/bin/clippy-driver >> "${T}/provider-${P}"
-		echo /usr/bin/cargo-clippy >> "${T}/provider-${P}"
+		echo /usr/bin/clippy-driver >>"${T}/provider-${P}"
+		echo /usr/bin/cargo-clippy >>"${T}/provider-${P}"
 	fi
 	if use miri; then
-		echo /usr/bin/miri >> "${T}/provider-${P}"
-		echo /usr/bin/cargo-miri >> "${T}/provider-${P}"
+		echo /usr/bin/miri >>"${T}/provider-${P}"
+		echo /usr/bin/cargo-miri >>"${T}/provider-${P}"
 	fi
 	if use profiler; then
-		echo /usr/bin/rust-demangler >> "${T}/provider-${P}"
+		echo /usr/bin/rust-demangler >>"${T}/provider-${P}"
 	fi
 	if use rustfmt; then
-		echo /usr/bin/rustfmt >> "${T}/provider-${P}"
-		echo /usr/bin/cargo-fmt >> "${T}/provider-${P}"
+		echo /usr/bin/rustfmt >>"${T}/provider-${P}"
+		echo /usr/bin/cargo-fmt >>"${T}/provider-${P}"
 	fi
 	if use rust-analyzer; then
-		echo /usr/bin/rust-analyzer >> "${T}/provider-${P}"
+		echo /usr/bin/rust-analyzer >>"${T}/provider-${P}"
 	fi
 
 	insinto /etc/env.d/rust

@@ -44,12 +44,12 @@ dev-lang/go
 cuda? ( dev-util/nvidia-cuda-toolkit )
 rocm? (
 >=dev-util/hip-6.0.0
->=sci-libs/hipCUB-6.0.0
->=sci-libs/hipFFT-6.0.0
->=sci-libs/hipRAND-6.0.0
->=sci-libs/hipSOLVER-6.0.0
->=sci-libs/hipSPARSE-6.0.0
->=sci-libs/hipBLAS-6.0.0
+>=sci-libs/rocCUB-6.0.0
+>=sci-libs/rocFFT-6.0.0
+>=sci-libs/rocRAND-6.0.0
+>=sci-libs/rocSOLVER-6.0.0
+>=sci-libs/rocSPARSE-6.0.0
+>=sci-libs/rocBLAS-6.0.0
 )
 rocm? ( || (
 	virtual/opencl
@@ -75,12 +75,12 @@ RDEPEND="
 cuda? ( dev-util/nvidia-cuda-toolkit )
 rocm? ( 
 >=dev-util/hip-6.0.0
->=sci-libs/hipCUB-6.0.0
->=sci-libs/hipFFT-6.0.0
->=sci-libs/hipRAND-6.0.0
->=sci-libs/hipSOLVER-6.0.0
->=sci-libs/hipSPARSE-6.0.0
->=sci-libs/hipBLAS-6.0.0
+>=sci-libs/rocCUB-6.0.0
+>=sci-libs/rocFFT-6.0.0
+>=sci-libs/rocRAND-6.0.0
+>=sci-libs/rocSOLVER-6.0.0
+>=sci-libs/rocSPARSE-6.0.0
+>=sci-libs/rocBLAS-6.0.0
 >=dev-libs/rocm-opencl-runtime-6.0.0
 )
 rocm? ( || ( 

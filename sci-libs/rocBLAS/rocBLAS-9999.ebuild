@@ -11,8 +11,14 @@ inherit cmake docs edo multiprocessing rocm
 
 DESCRIPTION="AMD's library for BLAS on ROCm"
 HOMEPAGE="https://github.com/ROCmSoftwarePlatform/rocBLAS"
-SRC_URI="https://github.com/ROCmSoftwarePlatform/rocBLAS/archive/rocm-${PV}.tar.gz -> rocm-${P}.tar.gz"
-S="${WORKDIR}/${PN}-rocm-${PV}"
+
+if [[ ${PV} == *9999 ]]; then
+	EGIT_REPO_URI=https://github.com/ROCm/rocBLAS.git
+	inherit git-r3
+else
+	SRC_URI="https://github.com/ROCmSoftwarePlatform/rocBLAS/archive/rocm-${PV}.tar.gz -> rocm-${P}.tar.gz"
+fi
+S="${WORKDIR}/${PN}-${PV}"
 
 LICENSE="BSD"
 KEYWORDS="~amd64"
@@ -23,7 +29,7 @@ REQUIRED_USE="${ROCM_REQUIRED_USE}"
 
 BDEPEND="
 	>=dev-build/rocm-cmake-5.3
- 	>=dev-util/Tensile:${SLOT}
+ 	>=dev-util/Tensile-9999
 	dev-python/joblib
 	test? ( dev-cpp/gtest )
 "

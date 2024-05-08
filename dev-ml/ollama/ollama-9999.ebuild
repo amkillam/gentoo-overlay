@@ -26,11 +26,11 @@ SLOT="0"
 IUSE="metal cuda rocm opencl vulkan sycl kompute mpi uma hbm ccache test lto static-libs cpu_flags_x86_avx cpu_flags_x86_avx2 cpu_flags_x86_avx512 cpu_flags_x86_avx512vbmi cpu_flags_x86_avx512_vnni cpu_flags_x86_fma3 cpu_flags_x86_fma4"
 
 REQUIRED_USE="
-sycl? ( !metal !opencl !hip )
-vulkan? ( !metal !opencl !hip !sycl !kompute )
-opencl? ( !metal !hip )
-rocm? ( !metal !opencl )
-metal? ( !hip !opencl !vulkan !sycl )
+sycl? ( !metal !opencl !rocm )
+vulkan? ( !metal !opencl !rocm !sycl !kompute )
+opencl? ( !metal rocm )
+rocm? ( !metal opencl )
+metal? ( !rocm !opencl !vulkan !sycl )
 "
 
 S="${WORKDIR}/${P}"
@@ -43,14 +43,13 @@ virtual/pkgconfig
 dev-lang/go
 cuda? ( dev-util/nvidia-cuda-toolkit )
 rocm? (
-dev-util/hip
-sci-libs/hipCUB
-sci-libs/hipFFT
-sci-libs/hipRAND
-sci-libs/hipSOLVER
-sci-libs/hipSPARSE
-sci-libs/hipBLAS
-dev-libs/hip-opencl-runtime
+>=dev-util/hip-6.0.0
+>=sci-libs/hipCUB-6.0.0
+>=sci-libs/hipFFT-6.0.0
+>=sci-libs/hipRAND-6.0.0
+>=sci-libs/hipSOLVER-6.0.0
+>=sci-libs/hipSPARSE-6.0.0
+>=sci-libs/hipBLAS-6.0.0
 )
 rocm? ( || (
 	virtual/opencl
@@ -75,14 +74,14 @@ kompute? ( dev-util/vulkan-headers )
 RDEPEND="
 cuda? ( dev-util/nvidia-cuda-toolkit )
 rocm? ( 
-dev-util/hip
-sci-libs/hipCUB
-sci-libs/hipFFT
-sci-libs/hipRAND
-sci-libs/hipSOLVER
-sci-libs/hipSPARSE
-sci-libs/hipBLAS
-dev-libs/hip-opencl-runtime  
+>=dev-util/hip-6.0.0
+>=sci-libs/hipCUB-6.0.0
+>=sci-libs/hipFFT-6.0.0
+>=sci-libs/hipRAND-6.0.0
+>=sci-libs/hipSOLVER-6.0.0
+>=sci-libs/hipSPARSE-6.0.0
+>=sci-libs/hipBLAS-6.0.0
+>=dev-libs/rocm-opencl-runtime-6.0.0
 )
 rocm? ( || ( 
 	virtual/opencl 
@@ -123,9 +122,9 @@ src_prepare() {
 }
 src_compile() {
 
-	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
-	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
-	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_LDFLAGS="${LDFLAGS}"
 
 	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on \

@@ -23,14 +23,14 @@ fi
 RESTRICT="mirror"
 LICENSE="GPL-3"
 SLOT="0"
-IUSE="metal cuda hip opencl vulkan sycl kompute mpi uma hbm ccache test lto static-libs cpu_flags_x86_avx cpu_flags_x86_avx2 cpu_flags_x86_avx512 cpu_flags_x86_avx512vbmi cpu_flags_x86_avx512_vnni cpu_flags_x86_fma3 cpu_flags_x86_fma4"
+IUSE="metal cuda rocm opencl vulkan sycl kompute mpi uma hbm ccache test lto static-libs cpu_flags_x86_avx cpu_flags_x86_avx2 cpu_flags_x86_avx512 cpu_flags_x86_avx512vbmi cpu_flags_x86_avx512_vnni cpu_flags_x86_fma3 cpu_flags_x86_fma4"
 
 REQUIRED_USE="
-sycl? ( !metal !opencl !hip )
-vulkan? ( !metal !opencl !hip !sycl !kompute )
-opencl? ( !metal !hip )
-hip? ( !metal !opencl )
-metal? ( !hip !opencl !vulkan !sycl )
+sycl? ( !metal !opencl !rocm )
+vulkan? ( !metal !opencl !rocm !sycl !kompute )
+opencl? ( !metal rocm )
+rocm? ( !metal opencl )
+metal? ( !rocm !opencl !vulkan !sycl )
 "
 
 S="${WORKDIR}/${P}"
@@ -42,7 +42,7 @@ dev-python/poetry
 virtual/pkgconfig
 dev-lang/go
 cuda? ( dev-util/nvidia-cuda-toolkit )
-hip? (
+rocm? (
 dev-util/hip
 sci-libs/hipCUB
 sci-libs/hipFFT
@@ -50,9 +50,8 @@ sci-libs/hipRAND
 sci-libs/hipSOLVER
 sci-libs/hipSPARSE
 sci-libs/hipBLAS
-dev-libs/hip-opencl-runtime
 )
-hip? ( || (
+rocm? ( || (
 	virtual/opencl
 	sci-libs/clblast
 	sci-libs/clblas
@@ -74,17 +73,22 @@ kompute? ( dev-util/vulkan-headers )
 "
 RDEPEND="
 cuda? ( dev-util/nvidia-cuda-toolkit )
-hip? ( 
-dev-util/hip
+rocm? ( 
+>=dev-util/hip-6.0.0
 sci-libs/hipCUB
 sci-libs/hipFFT
 sci-libs/hipRAND
 sci-libs/hipSOLVER
 sci-libs/hipSPARSE
 sci-libs/hipBLAS
-dev-libs/hip-opencl-runtime  
+>=dev-libs/rocm-comgr-6.0.0
+>=dev-libs/rocm-device-libs-6.0.0
+>=dev-libs/rocm-opencl-runtime-6.0.0
+>=dev-util/rocminfo-6.0.0
+>=dev-libs/rocr-runtime-6.0.0
+>=dev-libs/roct-thunk-interface-6.0.0
 )
-hip? ( || ( 
+rocm? ( || ( 
 	virtual/opencl 
 	sci-libs/clblast
 	sci-libs/clblas
@@ -123,9 +127,9 @@ src_prepare() {
 }
 src_compile() {
 
-	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
-	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
-	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_LDFLAGS="${LDFLAGS}"
 
 	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on \
@@ -151,7 +155,7 @@ src_compile() {
 		fi
 	fi
 
-	if use hip; then
+	if use rocm; then
 		export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on"
 		export CGO_LDFLAGS+=" -lhip"
 		use uma && export CMAKE_DEFS+=" -DLLAMA_HIP_UMA=on"

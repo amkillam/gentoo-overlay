@@ -23,14 +23,14 @@ fi
 RESTRICT="mirror"
 LICENSE="GPL-3"
 SLOT="0"
-IUSE="metal cuda rocm opencl vulkan sycl kompute mpi uma hbm ccache test lto static-libs cpu_flags_x86_avx cpu_flags_x86_avx2 cpu_flags_x86_avx512 cpu_flags_x86_avx512vbmi cpu_flags_x86_avx512_vnni cpu_flags_x86_fma3 cpu_flags_x86_fma4"
+IUSE="metal cuda hip opencl vulkan sycl kompute mpi uma hbm ccache test lto static-libs cpu_flags_x86_avx cpu_flags_x86_avx2 cpu_flags_x86_avx512 cpu_flags_x86_avx512vbmi cpu_flags_x86_avx512_vnni cpu_flags_x86_fma3 cpu_flags_x86_fma4"
 
 REQUIRED_USE="
-sycl? ( !metal !opencl !rocm )
-vulkan? ( !metal !opencl !rocm !sycl !kompute )
-opencl? ( !metal rocm )
-rocm? ( !metal opencl )
-metal? ( !rocm !opencl !vulkan !sycl )
+sycl? ( !metal !opencl !hip )
+vulkan? ( !metal !opencl !hip !sycl !kompute )
+opencl? ( !metal !hip )
+hip? ( !metal !opencl )
+metal? ( !hip !opencl !vulkan !sycl )
 "
 
 S="${WORKDIR}/${P}"
@@ -42,7 +42,7 @@ dev-python/poetry
 virtual/pkgconfig
 dev-lang/go
 cuda? ( dev-util/nvidia-cuda-toolkit )
-rocm? (
+hip? (
 dev-util/hip
 sci-libs/hipCUB
 sci-libs/hipFFT
@@ -50,9 +50,9 @@ sci-libs/hipRAND
 sci-libs/hipSOLVER
 sci-libs/hipSPARSE
 sci-libs/hipBLAS
-dev-libs/rocm-opencl-runtime
+dev-libs/hip-opencl-runtime
 )
-rocm? ( || (
+hip? ( || (
 	virtual/opencl
 	sci-libs/clblast
 	sci-libs/clblas
@@ -74,7 +74,7 @@ kompute? ( dev-util/vulkan-headers )
 "
 RDEPEND="
 cuda? ( dev-util/nvidia-cuda-toolkit )
-rocm? ( 
+hip? ( 
 dev-util/hip
 sci-libs/hipCUB
 sci-libs/hipFFT
@@ -82,9 +82,9 @@ sci-libs/hipRAND
 sci-libs/hipSOLVER
 sci-libs/hipSPARSE
 sci-libs/hipBLAS
-dev-libs/rocm-opencl-runtime  
+dev-libs/hip-opencl-runtime  
 )
-rocm? ( || ( 
+hip? ( || ( 
 	virtual/opencl 
 	sci-libs/clblast
 	sci-libs/clblas
@@ -109,11 +109,6 @@ acct-user/ollama
 acct-group/ollama
 "
 
-PATCHES=(
-	"${FILESDIR}/${P}-buildgen.patch"
-	"${FILESDIR}/${P}-amdgpu.patch"
-)
-
 src_unpack() {
 	[[ -n "${EGIT_REPO_URI}" ]] && git-r3_src_unpack
 	go-module_src_unpack
@@ -123,13 +118,14 @@ src_unpack() {
 
 src_prepare() {
 	use vulkan && eapply "${FILESDIR}/${P}-vulkan-support.patch"
+	eaply "${FILESDIR}/${P}-buildgen.patch"
 	eapply_user
 }
 src_compile() {
 
-	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
-	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
-	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_LDFLAGS="${LDFLAGS}"
 
 	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on \
@@ -155,7 +151,7 @@ src_compile() {
 		fi
 	fi
 
-	if use rocm; then
+	if use hip; then
 		export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on"
 		export CGO_LDFLAGS+=" -lhip"
 		use uma && export CMAKE_DEFS+=" -DLLAMA_HIP_UMA=on"
@@ -204,6 +200,9 @@ src_compile() {
 	export CGO_CFLAGS+=" ${CMAKE_DEFS}"
 	export CGO_CPPFLAGS+=" ${CMAKE_DEFS}"
 	export CGO_CXXFLAGS+=" ${CMAKE_DEFS}"
+
+	sed -i 's/\/sys\/module\/amdgpu\/version/\/usr\/share\/ollama\/gentoo_amdgpu_version/g' "${S}/gpu/amd_linux.go"
+	sed -i 's/\/usr\/share\/ollama\/lib\/rocm/\/lib64/g' "${S}/gpu/amd_linux.go"
 
 	ego generate ./...
 	for file in ${S}/llm/llama.cpp/Makefile ${S}/llm/llama.cpp/CMakeLists.txt; do

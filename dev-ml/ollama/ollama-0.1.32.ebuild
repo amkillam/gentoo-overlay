@@ -6,6 +6,11 @@ HOMEPAGE="https:/github.com/ollama/ollama"
 
 if [[ ${PV} == *9999 ]]; then
 	inherit git-r3
+	if [[ "$USE" == *vulkan* ]]; then
+		export EGIT_OVERRIDE_BRANCH_GGERGANOV_LLAMA_CPP="0cc4m/vulkan-improvements"
+		export EGIT_OVERRIDE_COMMIT_GGERGANOV_LLAMA_CPP="0cc4m/vulkan-improvements"
+		export OLLAMA_SKIP_PATCHING=ON
+	fi
 	EGIT_REPO_URI="https://github.com/ollama/ollama.git"
 else
 	SRC_URI="https://github.com/ollama/ollama/archive/${PV}.tar.gz -> ${P}.tar.gz"
@@ -18,14 +23,14 @@ fi
 RESTRICT="mirror"
 LICENSE="GPL-3"
 SLOT="0"
-IUSE="metal cuda rocm opencl vulkan sycl kompute mpi uma hbm ccache test lto static-libs cpu_flags_x86_avx cpu_flags_x86_avx2 cpu_flags_x86_avx512 cpu_flags_x86_avx512vbmi cpu_flags_x86_avx512_vnni cpu_flags_x86_fma3 cpu_flags_x86_fma4"
+IUSE="metal cuda hip opencl vulkan sycl kompute mpi uma hbm ccache test lto static-libs cpu_flags_x86_avx cpu_flags_x86_avx2 cpu_flags_x86_avx512 cpu_flags_x86_avx512vbmi cpu_flags_x86_avx512_vnni cpu_flags_x86_fma3 cpu_flags_x86_fma4"
 
 REQUIRED_USE="
-sycl? ( !metal !opencl !rocm )
-vulkan? ( !metal !opencl !rocm !sycl )
-opencl? ( !metal rocm )
-rocm? ( !metal opencl )
-metal? ( !rocm !opencl !vulkan !sycl )
+sycl? ( !metal !opencl !hip )
+vulkan? ( !metal !opencl !hip !sycl !kompute )
+opencl? ( !metal !hip )
+hip? ( !metal !opencl )
+metal? ( !hip !opencl !vulkan !sycl )
 "
 
 S="${WORKDIR}/${P}"
@@ -37,7 +42,7 @@ dev-python/poetry
 virtual/pkgconfig
 dev-lang/go
 cuda? ( dev-util/nvidia-cuda-toolkit )
-rocm? (
+hip? (
 dev-util/hip
 sci-libs/hipCUB
 sci-libs/hipFFT
@@ -45,9 +50,9 @@ sci-libs/hipRAND
 sci-libs/hipSOLVER
 sci-libs/hipSPARSE
 sci-libs/hipBLAS
-dev-libs/rocm-opencl-runtime
+dev-libs/hip-opencl-runtime
 )
-rocm? ( || (
+hip? ( || (
 	virtual/opencl
 	sci-libs/clblast
 	sci-libs/clblas
@@ -69,7 +74,7 @@ kompute? ( dev-util/vulkan-headers )
 "
 RDEPEND="
 cuda? ( dev-util/nvidia-cuda-toolkit )
-rocm? ( 
+hip? ( 
 dev-util/hip
 sci-libs/hipCUB
 sci-libs/hipFFT
@@ -77,9 +82,9 @@ sci-libs/hipRAND
 sci-libs/hipSOLVER
 sci-libs/hipSPARSE
 sci-libs/hipBLAS
-dev-libs/rocm-opencl-runtime  
+dev-libs/hip-opencl-runtime  
 )
-rocm? ( || ( 
+hip? ( || ( 
 	virtual/opencl 
 	sci-libs/clblast
 	sci-libs/clblas
@@ -104,11 +109,6 @@ acct-user/ollama
 acct-group/ollama
 "
 
-PATCHES=(
-	"${FILESDIR}/${P}-buildgen.patch"
-	"${FILESDIR}/${P}-amdgpu.patch"
-)
-
 src_unpack() {
 	[[ -n "${EGIT_REPO_URI}" ]] && git-r3_src_unpack
 	go-module_src_unpack
@@ -118,30 +118,29 @@ src_unpack() {
 
 src_prepare() {
 	use vulkan && eapply "${FILESDIR}/${P}-vulkan-support.patch"
-	use vulkan &&
-		cd "${S}/llm/llama.cpp" &&
-		git checkout 0cc4m/vulkan-improvements &&
-		cd "${S}"
+	eaply "${FILESDIR}/${P}-buildgen.patch"
 	eapply_user
 }
 src_compile() {
 
-	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
-	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
-	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --hip-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_LDFLAGS="${LDFLAGS}"
 
-	#CGO does not work well with line breaks in env vars
-	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release"
+	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on \
+		-DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release"
 
 	use ccache && export CMAKE_DEFS+=" -DLLAMA_CCACHE=on"
 	use lto && export CMAKE_DEFS+=" -DLLAMA_LTO=on"
 	use static-libs && export CMAKE_DEFS+=" -DLLAMA_STATIC=on"
 
-	use metal && export CMAKE_DEFS+=" -DLLAMA_METAL=on -DLLAMA_ACCELERATE=on -DGGML_USE_METAL=ON"
+	use metal &&
+		export CMAKE_DEFS+=" -DLLAMA_METAL=on -DLLAMA_ACCELERATE=on -DGGML_USE_METAL=ON"
 
-	use opencl && export CMAKE_DEFS+=" -DLLAMA_CLBLAST=on -DGGML_USE_CLBLAST=ON" &&
-		export CGO_LDFLAGS+=" -lOpenCL" &&
+	if use opencl; then
+		export CMAKE_DEFS+=" -DLLAMA_CLBLAST=on -DGGML_USE_CLBLAST=ON"
+		export CGO_LDFLAGS+=" -lOpenCL"
 		if [ -f /lib64/libclblast.so ]; then
 			export CGO_LDFLAGS+=" -lclblast"
 		elif [ -f /lib64/libclBLAS.so ]; then
@@ -150,21 +149,41 @@ src_compile() {
 			einfo "opencl USE flag requested but neither clBLAS nor clblast libraries installed! Exiting..."
 			exit 0
 		fi
-	use rocm && export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on" &&
-		export CGO_LDFLAGS+=" -lhip" &&
+	fi
+
+	if use hip; then
+		export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on"
+		export CGO_LDFLAGS+=" -lhip"
 		use uma && export CMAKE_DEFS+=" -DLLAMA_HIP_UMA=on"
+	fi
 
-	use cuda && export CMAKE_DEFS+=" -DLLAMA_CUDA=on -DLLAMA_CUDA_FORCE_DMMV=on -DLLAMA_CUDA_FORCE_MMQ=on -DLLAMA_CUDA_F16=off -DGGML_USE_CUDA=ON"
+	use cuda &&
+		export CMAKE_DEFS+=" -DLLAMA_CUDA=on -DLLAMA_CUDA_FORCE_DMMV=on \
+		-DLLAMA_CUDA_FORCE_MMQ=on -DLLAMA_CUDA_F16=off -DGGML_USE_CUDA=ON"
 
-	use vulkan &&
-		export CMAKE_DEFS+=" -DLLAMA_VULKAN=ON -DGGML_USE_VULKAN=ON -DGGML_VULKAN_CHECK_RESULTS=ON" &&
-		export GGML_USE_VULKAN=ON && export GGML_VULKAN_CHECK_RESULTS=ON &&
-		export EXTRA_LIBS="-lvulkan" &&
+	if use vulkan; then
+		export CMAKE_DEFS+=" -DLLAMA_VULKAN=ON -DGGML_USE_VULKAN=ON \
+			-DGGML_VULKAN_CHECK_RESULTS=ON"
+		export GGML_USE_VULKAN=ON
+		export GGML_VULKAN_CHECK_RESULTS=ON
+		export EXTRA_LIBS="-lvulkan"
 		export CGO_LDFLAGS+=" -lvulkan"
+	fi
+
+	if use sycl; then
+		export CMAKE_DEFS+=" -DLLAMA_SYCL=on -DGGML_USE_SYCL=ON"
+		export CGO_CFLAGS+=" -fsycl"
+		export CGO_CXXFLAGS+=" -fsycl"
+		export CGO_CPPFLAGS+=" -fsycl"
+	fi
+
 	use mpi && export CMAKE_DEFS+=" -DLLAMA_MPI=on"
-	use sycl && export CMAKE_DEFS+=" -DLLAMA_SYCL=on -DGGML_USE_SYCL=ON" && export CGO_CFLAGS+=" -fsycl" && export CGO_CXXFLAGS+=" -fsycl" && export CGO_CPPFLAGS+=" -fsycl"
-	use kompute && export CMAKE_DEFS+=" -DLLAMA_KOMPUTE=on -DKOMPUTE_OPT_USE_BUILT_IN_SPDLOG=OFF -DKOMPUTE_OPT_USE_BUILT_IN_FMT=OFF -DKOMPUTE_OPT_USE_BUILT_IN_GOOGLE_TEST=OFF -DKOMPUTE_OPT_USE_BUILT_IN_PYBIND11=OFF -DKOMPUTE_OPT_USE_BUILT_IN_VULKAN_HEADER=OFF -DKOMPUTE_OPT_DISABLE_VULKAN_VERSION_CHECK=ON -DGGML_USE_CLBLAST=ON"
 	use hbm && export CMAKE_DEFS+=" -DLLAMA_CPU_HBM=on"
+	use kompute &&
+		export CMAKE_DEFS+=" -DLLAMA_KOMPUTE=on -DKOMPUTE_OPT_USE_BUILT_IN_SPDLOG=OFF \
+		-DKOMPUTE_OPT_USE_BUILT_IN_FMT=OFF -DKOMPUTE_OPT_USE_BUILT_IN_GOOGLE_TEST=OFF \
+		-DKOMPUTE_OPT_USE_BUILT_IN_PYBIND11=OFF -DKOMPUTE_OPT_USE_BUILT_IN_VULKAN_HEADER=OFF \
+		-DKOMPUTE_OPT_DISABLE_VULKAN_VERSION_CHECK=ON -DGGML_USE_CLBLAST=ON"
 
 	use cpu_flags_x86_avx && export CMAKE_DEFS+=" -DLLAMA_AVX=on"
 	use cpu_flags_x86_avx2 && export CMAKE_DEFS+=" -DLLAMA_AVX2=on"
@@ -182,14 +201,21 @@ src_compile() {
 	export CGO_CPPFLAGS+=" ${CMAKE_DEFS}"
 	export CGO_CXXFLAGS+=" ${CMAKE_DEFS}"
 
+	sed -i 's/\/sys\/module\/amdgpu\/version/\/usr\/share\/ollama\/gentoo_amdgpu_version/g' "${S}/gpu/amd_linux.go"
+	sed -i 's/\/usr\/share\/ollama\/lib\/rocm/\/lib64/g' "${S}/gpu/amd_linux.go"
+
 	ego generate ./...
 	for file in ${S}/llm/llama.cpp/Makefile ${S}/llm/llama.cpp/CMakeLists.txt; do
 		sed -i 's/ -Werror=implicit-function-declaration//g' "${file}"
 		sed -i 's/-Werror//g' "${file}"
 	done
 
-	use kompute && ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a ${S}/llm/build/linux/x86_64_static/kompute/src/CMakeFiles/kompute.dir/*.o &&
-		ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a ${S}/llm/build/linux/x86_64_static/kompute/src/logger/CMakeFiles/kp_logger.dir/Logger.cpp.o
+	if use kompute; then
+		ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a \
+			${S}/llm/build/linux/x86_64_static/kompute/src/CMakeFiles/kompute.dir/*.o
+		ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a \
+			${S}/llm/build/linux/x86_64_static/kompute/src/logger/CMakeFiles/kp_logger.dir/Logger.cpp.o
+	fi
 
 	ego build .
 }

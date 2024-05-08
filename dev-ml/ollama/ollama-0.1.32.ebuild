@@ -42,14 +42,9 @@ dev-python/poetry
 virtual/pkgconfig
 dev-lang/go
 cuda? ( dev-util/nvidia-cuda-toolkit )
-rocm? (
-dev-util/hip
-sci-libs/hipCUB
-sci-libs/hipFFT
-sci-libs/hipRAND
-sci-libs/hipSOLVER
-sci-libs/hipSPARSE
-sci-libs/hipBLAS
+rocm? ( 
+>=dev-libs/rocm-opencl-runtime-9999
+>=sci-libs/hipBLAS-9999
 )
 rocm? ( || (
 	virtual/opencl
@@ -74,19 +69,8 @@ kompute? ( dev-util/vulkan-headers )
 RDEPEND="
 cuda? ( dev-util/nvidia-cuda-toolkit )
 rocm? ( 
->=dev-util/hip-6.0.0
-sci-libs/hipCUB
-sci-libs/hipFFT
-sci-libs/hipRAND
-sci-libs/hipSOLVER
-sci-libs/hipSPARSE
-sci-libs/hipBLAS
->=dev-libs/rocm-comgr-6.0.0
->=dev-libs/rocm-device-libs-6.0.0
->=dev-libs/rocm-opencl-runtime-6.0.0
->=dev-util/rocminfo-6.0.0
->=dev-libs/rocr-runtime-6.0.0
->=dev-libs/roct-thunk-interface-6.0.0
+>=dev-libs/rocm-opencl-runtime-9999
+>=sci-libs/hipBLAS-9999
 )
 rocm? ( || ( 
 	virtual/opencl 

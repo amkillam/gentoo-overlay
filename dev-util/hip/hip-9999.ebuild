@@ -7,15 +7,20 @@ DOCS_BUILDER="doxygen"
 DOCS_DEPEND="media-gfx/graphviz"
 ROCM_SKIP_GLOBALS=1
 
-LLVM_COMPAT=(17)
-
-inherit cmake docs flag-o-matic llvm-r1 rocm
+inherit cmake docs flag-o-matic rocm
 
 DESCRIPTION="C++ Heterogeneous-Compute Interface for Portability"
 HOMEPAGE="https://github.com/ROCm/clr"
-SRC_URI="https://github.com/ROCm/clr/archive/refs/tags/rocm-${PV}.tar.gz -> rocm-clr-${PV}.tar.gz
+
+if [[ ${PV} == *9999 ]]; then
+	EGIT_REPO_URI=https://github.com/ROCm/clr.git
+	HIP_REPO_URI=https://github.com/ROCm/HIP.git
+	inherit git-r3
+else
+	SRC_URI="https://github.com/ROCm/clr/archive/refs/tags/rocm-${PV}.tar.gz -> rocm-clr-${PV}.tar.gz
 	https://github.com/ROCm/HIP/archive/refs/tags/rocm-${PV}.tar.gz -> hip-${PV}.tar.gz
 	test? ( https://github.com/ROCm/hip-tests/archive/refs/tags/rocm-${PV}.tar.gz )"
+fi
 
 KEYWORDS="~amd64"
 LICENSE="MIT"
@@ -27,9 +32,7 @@ IUSE="debug test"
 DEPEND="
 	dev-util/hipcc
 	>=dev-util/rocminfo-5
-	$(llvm_gen_dep '
-		sys-devel/clang:${LLVM_SLOT}
-	')
+		sys-devel/clang:19
 	dev-libs/rocm-comgr:${SLOT}
 	dev-libs/rocr-runtime:${SLOT}
 	x11-base/xorg-proto
@@ -38,18 +41,13 @@ DEPEND="
 RDEPEND="${DEPEND}
 	dev-perl/URI-Encode
 	sys-devel/clang-runtime:=
-	>=dev-libs/roct-thunk-interface-5"
+	>=dev-libs/roct-thunk-interface-9999"
+
+S="${WORKDIR}/rocm-clr-${PV}/"
 
 PATCHES=(
-	"${FILESDIR}/${PN}-5.7.0-install.patch"
-	"${FILESDIR}/${PN}-5.7.1-fix-unaligned-access.patch"
-	"${FILESDIR}/${PN}-5.7.1-exec-stack.patch"
-	"${FILESDIR}/${PN}-5.7.1-disable-stack-protector.patch"
-	"${FILESDIR}/${PN}-5.7.1-no_asan_doc.patch"
-	"${FILESDIR}/${PN}-5.7.1-extend-isa-compatibility-check.patch"
+	${FILESDIR}/rocm-opencl-runtime-9999-no-hsa-contiguous-mem-flags.patch
 )
-
-S="${WORKDIR}/clr-rocm-${PV}/"
 
 hip_test_wrapper() {
 	local S="${WORKDIR}/hip-tests-rocm-${TEST_PV}/catch"
@@ -59,16 +57,33 @@ hip_test_wrapper() {
 	$@
 }
 
+src_unpack() {
+	if [[ "${PV}" == *9999 ]]; then
+		git-r3_fetch "$HIP_REPO_URI"
+		git-r3_checkout "$HIP_REPO_URI" "hip-${PV}"
+		git-r3_fetch "$EGIT_REPO_URI"
+		git-r3_checkout "$EGIT_REPO_URI" "rocm-clr-${PV}"
+	else
+		default
+	fi
+
+}
+
+get_llvm_prefix() {
+	echo /usr/lib/llvm/19
+}
+
 src_prepare() {
+
 	# Set HIP and HIP Clang paths directly, don't search using heuristics
 	sed -e "s:# Search for HIP installation:set(HIP_ROOT_DIR \"${EPREFIX}/usr\"):" \
 		-e "s:#Set HIP_CLANG_PATH:set(HIP_CLANG_PATH \"$(get_llvm_prefix -d)/bin\"):" \
-		-i "${WORKDIR}"/HIP-rocm-${PV}/cmake/FindHIP.cmake || die
+		-i "${WORKDIR}"/hip-${PV}/cmake/FindHIP.cmake || die
 
 	# https://github.com/ROCm/HIP/commit/405d029422ba8bb6be5a233d5eebedd2ad2e8bd3
 	# https://github.com/ROCm/clr/commit/ab6d34ae773f4d151e04170c0f4e46c1135ddf3e
 	# Migrated to hip-test, but somehow the change is not applied to the tarball.
-	rm -rf "${WORKDIR}"/HIP-rocm-${PV}/tests || die
+	rm -rf "${WORKDIR}"/hip-${PV}/tests || die
 	sed -e '/tests.*cmake/d' -i hipamd/CMakeLists.txt || die
 
 	cmake_src_prepare
@@ -96,10 +111,11 @@ src_configure() {
 
 	local mycmakeargs=(
 		-DCMAKE_PREFIX_PATH="$(get_llvm_prefix)"
+		-DHIP_ENABLE_ROCPROFILER_REGISTER=OFF
 		-DCMAKE_BUILD_TYPE=${buildtype}
 		-DCMAKE_SKIP_RPATH=ON
 		-DHIP_PLATFORM=amd
-		-DHIP_COMMON_DIR="${WORKDIR}/HIP-rocm-${PV}"
+		-DHIP_COMMON_DIR="${WORKDIR}/hip-${PV}"
 		-DROCM_PATH="${EPREFIX}/usr"
 		-DUSE_PROF_API=0
 		-DFILE_REORG_BACKWARD_COMPATIBILITY=OFF

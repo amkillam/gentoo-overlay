@@ -35,6 +35,10 @@ BDEPEND=">=dev-build/rocm-cmake-9999
 	test? ( >=x11-apps/mesa-progs-8.5.0[X] )
 	"
 
+PATCHES=(
+	${FILESDIR}/rocm-opencl-runtime-9999-no-hsa-contiguous-mem-flags.patch
+)
+
 src_unpack() {
 	if [[ ${PV} == "9999" ]]; then
 		git-r3_src_unpack
@@ -75,12 +79,12 @@ src_configure() {
 
 src_install() {
 	insinto /etc/OpenCL/vendors
-	doins config/amdocl64.icd
+	doins "${S}/opencl/config/amdocl"*.icd
 
 	cd "${BUILD_DIR}" || die
 	insinto /usr/lib64
-	doins amdocl/libamdocl64.so
-	doins tools/cltrace/libcltrace.so
+	doins opencl/amdocl/libamdocl64.so
+	doins opencl/tools/cltrace/libcltrace.so
 }
 
 # Copied from rocm.eclass. This ebuild does not need amdgpu_targets

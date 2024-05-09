@@ -3,10 +3,9 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
-ROCM_VERSION=${PV}
+PYTHON_COMPAT=(python3_{10..12})
 
-inherit cmake check-reqs edo multiprocessing python-r1 rocm
+inherit cmake check-reqs edo multiprocessing python-r1
 
 DESCRIPTION="Next generation FFT implementation for ROCm"
 HOMEPAGE="https://github.com/ROCm/rocFFT"
@@ -29,18 +28,18 @@ perfscripts? (
 	dev-python/pandas[${PYTHON_USEDEP}] )
 ${PYTHON_DEPS}"
 
-DEPEND="=dev-util/hip-6*
+DEPEND=">=dev-util/hip-6.0.2
 	${PYTHON_DEPS}
 	benchmark? (
 		dev-libs/boost
-		sci-libs/hipRAND:${SLOT}[${ROCM_USEDEP}]
+		>=sci-libs/hipRAND-6.0.2
 	)
 	test? (
 		dev-cpp/gtest
 		dev-libs/boost
 		>=sci-libs/fftw-3
 		sys-libs/libomp
-		sci-libs/hipRAND:${SLOT}[${ROCM_USEDEP}]
+	>=sci-libs/hipRAND-6.0.2
 	)
 "
 
@@ -69,12 +68,12 @@ required_mem() {
 	else
 		if [[ -n "${AMDGPU_TARGETS}" ]]; then
 			# count how many archs user specified in ${AMDGPU_TARGETS}
-			local NARCH=$(($(awk -F";" '{print NF-1}' <<< "${AMDGPU_TARGETS}" || die)+1))
+			local NARCH=$(($(awk -F";" '{print NF-1}' <<<"${AMDGPU_TARGETS}" || die) + 1))
 		else
 			# The default number of AMDGPU_TARGETS for rocFFT-4.3.0. May change in the future.
 			local NARCH=7
 		fi
-		echo "$(($(makeopts_jobs)*${NARCH}*25+2200))M" # A linear function estimating how much memory required
+		echo "$(($(makeopts_jobs) * ${NARCH} * 25 + 2200))M" # A linear function estimating how much memory required
 	fi
 }
 

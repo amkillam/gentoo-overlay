@@ -3,9 +3,7 @@
 
 EAPI=8
 
-LLVM_COMPAT=(17)
-
-inherit cmake flag-o-matic llvm-r1
+inherit cmake flag-o-matic
 
 if [[ ${PV} == *9999 ]]; then
 	EGIT_REPO_URI="https://github.com/ROCm/ROCR-Runtime.git"
@@ -33,10 +31,8 @@ COMMON_DEPEND="dev-libs/elfutils
 DEPEND="${COMMON_DEPEND}
 	>=dev-libs/roct-thunk-interface-${PV}
 	>=dev-libs/rocm-device-libs-${PV}
-	$(llvm_gen_dep '
-		sys-devel/clang:${LLVM_SLOT}=
-		sys-devel/lld:${LLVM_SLOT}=
-	')
+	sys-devel/clang:19
+	sys-devel/lld:19
 "
 RDEPEND="${DEPEND}"
 BDEPEND="app-editors/vim-core"

@@ -19,7 +19,7 @@ REQUIRED_USE="${ROCM_REQUIRED_USE}"
 RESTRICT="!test? ( test )"
 
 RDEPEND="dev-util/hip
-	sci-libs/rocPRIM:${SLOT}[${ROCM_USEDEP}]
+	>=sci-libs/rocPRIM-6.0.2
 	benchmark? ( dev-cpp/benchmark )
 	test? ( dev-cpp/gtest )
 "

@@ -43,7 +43,7 @@ RESTRICT="!test? ( test )"
 
 RDEPEND="dev-util/rocminfo
 		dev-util/hip
-		sci-libs/rocSPARSE:${SLOT}[${ROCM_USEDEP}]"
+		>=sci-libs/rocSPARSE-6.0.2"
 DEPEND="${RDEPEND}"
 BDEPEND="dev-build/rocm-cmake
 	>=dev-build/cmake-3.22

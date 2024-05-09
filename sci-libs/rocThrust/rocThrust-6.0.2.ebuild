@@ -3,9 +3,7 @@
 
 EAPI=8
 
-ROCM_VERSION=${PV}
-
-inherit cmake rocm
+inherit cmake
 
 DESCRIPTION="HIP back-end for the parallel algorithm library Thrust"
 HOMEPAGE="https://github.com/ROCm/rocThrust"
@@ -15,19 +13,18 @@ LICENSE="Apache-2.0"
 KEYWORDS="~amd64"
 SLOT="0/$(ver_cut 1-2)"
 IUSE="benchmark test"
-REQUIRED_USE="${ROCM_REQUIRED_USE}"
 
 RESTRICT="!test? ( test )"
 
 RDEPEND="dev-util/hip
-	sci-libs/rocPRIM:${SLOT}[${ROCM_USEDEP}]
+	>=sci-libs/rocPRIM-6.0.2
 	test? ( dev-cpp/gtest )"
 DEPEND="${RDEPEND}"
 BDEPEND=">=dev-build/cmake-3.22"
 
 S="${WORKDIR}/rocThrust-rocm-${PV}"
 
-PATCHES=( "${FILESDIR}/${PN}-4.0-operator_new.patch" )
+PATCHES=("${FILESDIR}/${PN}-4.0-operator_new.patch")
 
 src_configure() {
 	local mycmakeargs=(

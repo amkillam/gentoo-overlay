@@ -3,14 +3,11 @@
 
 EAPI=8
 
-ROCM_VERSION=${PV}
-
-inherit cmake rocm
+inherit cmake
 
 DESCRIPTION="CU / ROCM agnostic hip FFT implementation"
 HOMEPAGE="https://github.com/ROCm/hipFFT"
 SRC_URI="https://github.com/ROCm/hipFFT/archive/refs/tags/rocm-${PV}.tar.gz -> hipFFT-rocm-${PV}.tar.gz"
-REQUIRED_USE="${ROCM_REQUIRED_USE}"
 
 LICENSE="MIT"
 KEYWORDS="~amd64"
@@ -19,7 +16,7 @@ SLOT="0/$(ver_cut 1-2)"
 RESTRICT="test"
 
 RDEPEND="dev-util/hip
-	sci-libs/rocFFT:${SLOT}[${ROCM_USEDEP}]"
+	>=sci-libs/rocFFT-${PV}"
 DEPEND="${RDEPEND}"
 
 S="${WORKDIR}/hipFFT-rocm-${PV}"

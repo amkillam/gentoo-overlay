@@ -19,7 +19,7 @@ SLOT="0/$(ver_cut 1-2)"
 RESTRICT="test"
 
 RDEPEND="dev-util/hip
-	sci-libs/rocSOLVER:${SLOT}[${ROCM_USEDEP}]"
+	>=sci-libs/rocSOLVER-6.0.2"
 DEPEND="${RDEPEND}"
 
 S="${WORKDIR}/hipSOLVER-rocm-${PV}"

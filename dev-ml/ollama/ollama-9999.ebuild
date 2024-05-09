@@ -28,8 +28,8 @@ IUSE="metal cuda rocm opencl vulkan sycl kompute mpi uma hbm ccache test lto sta
 REQUIRED_USE="
 sycl? ( !metal !opencl !rocm )
 vulkan? ( !metal !opencl !rocm !sycl !kompute )
-opencl? ( !metal !rocm )
-rocm? ( !metal !opencl )
+opencl? ( !metal rocm )
+rocm? ( !metal opencl )
 metal? ( !rocm !opencl !vulkan !sycl )
 "
 
@@ -115,12 +115,15 @@ src_prepare() {
 }
 src_compile() {
 
+	export CFLAGS="${CFLAGS} -Wno-unused-command-line-argument -fcf-protection=none --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CXXFLAGS="${CXXFLAGS} -Wno-unused-command-line-argument -fcf-protection=none --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument -fcf-protection=none --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_LDFLAGS="${LDFLAGS}"
 
-	export CMAKE_DEFS="-DLLAMA_NATIVE=on -DLLAMA_F16C=OFF -DCMAKE_BUILD_TYPE=Release"
+	export CMAKE_DEFS="-DLLAMA_NATIVE=on -DLLAMA_F16C=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=native"
 
 	export NVCC_PREPEND_FLAGS='-ccbin /usr/bin/gcc-12'
 
@@ -204,8 +207,8 @@ src_compile() {
 	done
 
 	if use kompute; then
-		ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a \
-			${S}/llm/build/linux/x86_64_static/kompute/src/CMakeFiles/kompute.dir/*.o
+		ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a
+		#			${S}/llm/build/linux/x86_64_static/kompute/src/CMakeFiles/kompute.dir/*.o
 		ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a \
 			${S}/llm/build/linux/x86_64_static/kompute/src/logger/CMakeFiles/kp_logger.dir/Logger.cpp.o
 	fi

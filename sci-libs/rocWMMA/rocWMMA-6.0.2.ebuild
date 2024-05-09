@@ -14,7 +14,7 @@ LICENSE="MIT"
 KEYWORDS="~amd64"
 SLOT="0/$(ver_cut 1-2)"
 
-DEPEND="=dev-util/hip-6*"
+DEPEND=">=dev-util/hip-6"
 
 BDEPEND="
 	test? (
@@ -23,8 +23,8 @@ BDEPEND="
 	dev-build/rocm-cmake
 "
 
-IUSE_TARGETS=( gfx908 gfx90a gfx940 gfx941 gfx942 gfx1100 gfx1101 gfx1102 )
-IUSE_TARGETS=( "${IUSE_TARGETS[@]/#/amdgpu_targets_}" )
+IUSE_TARGETS=(gfx908 gfx90a gfx940 gfx941 gfx942 gfx1100 gfx1101 gfx1102)
+IUSE_TARGETS=("${IUSE_TARGETS[@]/#/amdgpu_targets_}")
 
 IUSE="${IUSE_TARGETS[@]/#/+} test"
 

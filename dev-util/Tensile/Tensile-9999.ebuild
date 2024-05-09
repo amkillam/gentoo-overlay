@@ -6,9 +6,8 @@ EAPI=8
 PYTHON_COMPAT=(python3_{10..12})
 DISTUTILS_USE_PEP517=setuptools
 ROCM_VERSION=${PV}
-LLVM_COMPAT=(17)
 
-inherit cmake distutils-r1 llvm-r1 prefix rocm
+inherit cmake distutils-r1 prefix rocm
 
 DESCRIPTION="Stretching GPU performance for GEMMs and tensor contractions"
 HOMEPAGE="https://github.com/ROCmSoftwarePlatform/Tensile"
@@ -36,9 +35,7 @@ RDEPEND="${PYTHON_DEPS}
 	dev-python/msgpack[${PYTHON_USEDEP}]
 	>=dev-util/hip-6.0.0-r1
 	>=dev-util/rocm-smi-4.3.0
-	$(llvm_gen_dep '
-		sys-devel/clang:${LLVM_SLOT}
-	')
+		sys-devel/clang:19
 "
 DEPEND="${RDEPEND}"
 BDEPEND="
@@ -68,6 +65,10 @@ src_unpack() {
 	else
 		default
 	fi
+}
+
+get_llvm_prefix() {
+	echo /usr/lib/llvm/19
 }
 
 src_prepare() {

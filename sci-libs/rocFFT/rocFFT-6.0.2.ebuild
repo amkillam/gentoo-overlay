@@ -104,7 +104,7 @@ src_prepare() {
 src_configure() {
 	local mycmakeargs=(
 		-DCMAKE_SKIP_RPATH=ON
-		-DAMDGPU_TARGETS="$(get_amdgpu_flags)"
+		-DAMDGPU_TARGETS="${AMDGPU_TARGETS}"
 		-Wno-dev
 		-DROCM_SYMLINK_LIBS=OFF
 		-DBUILD_CLIENTS_TESTS=$(usex test ON OFF)

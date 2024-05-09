@@ -28,8 +28,8 @@ IUSE="metal cuda rocm opencl vulkan sycl kompute mpi uma hbm ccache test lto sta
 REQUIRED_USE="
 sycl? ( !metal !opencl !rocm )
 vulkan? ( !metal !opencl !rocm !sycl !kompute )
-opencl? ( !metal rocm )
-rocm? ( !metal opencl )
+opencl? ( !metal !rocm )
+rocm? ( !metal !opencl )
 metal? ( !rocm !opencl !vulkan !sycl )
 "
 
@@ -41,10 +41,12 @@ acct-user/ollama
 dev-python/poetry
 virtual/pkgconfig
 dev-lang/go
+sys-devel/gcc:12
 cuda? ( dev-util/nvidia-cuda-toolkit )
 rocm? ( 
 >=dev-libs/rocm-opencl-runtime-9999
 >=sci-libs/hipBLAS-9999
+>=dev-util/hip-9999
 )
 rocm? ( || (
 	virtual/opencl
@@ -69,8 +71,10 @@ kompute? ( dev-util/vulkan-headers )
 RDEPEND="
 cuda? ( dev-util/nvidia-cuda-toolkit )
 rocm? ( 
+dev-util/nvidia-cuda-toolkit
 >=dev-libs/rocm-opencl-runtime-9999
 >=sci-libs/hipBLAS-9999
+>=dev-util/hip-9999
 )
 rocm? ( || ( 
 	virtual/opencl 
@@ -106,7 +110,7 @@ src_unpack() {
 
 src_prepare() {
 	use vulkan && eapply "${FILESDIR}/${P}-vulkan-support.patch"
-	eaply "${FILESDIR}/${P}-buildgen.patch"
+	eapply "${FILESDIR}/${P}-buildgen.patch"
 	eapply_user
 }
 src_compile() {
@@ -116,8 +120,9 @@ src_compile() {
 	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
 	export CGO_LDFLAGS="${LDFLAGS}"
 
-	export CMAKE_DEFS="-DLLAMA_FAST=on -DLLAMA_NATIVE=on \
-		-DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release"
+	export CMAKE_DEFS="-DLLAMA_NATIVE=on -DLLAMA_F16C=OFF -DCMAKE_BUILD_TYPE=Release"
+
+	export NVCC_PREPEND_FLAGS='-ccbin /usr/bin/gcc-12'
 
 	use ccache && export CMAKE_DEFS+=" -DLLAMA_CCACHE=on"
 	use lto && export CMAKE_DEFS+=" -DLLAMA_LTO=on"
@@ -141,13 +146,13 @@ src_compile() {
 
 	if use rocm; then
 		export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on"
-		export CGO_LDFLAGS+=" -lhip"
+		export CGO_LDFLAGS+=" -lhipblas -lrocblas -lamdhip64"
 		use uma && export CMAKE_DEFS+=" -DLLAMA_HIP_UMA=on"
 	fi
 
 	use cuda &&
 		export CMAKE_DEFS+=" -DLLAMA_CUDA=on -DLLAMA_CUDA_FORCE_DMMV=on \
-		-DLLAMA_CUDA_FORCE_MMQ=on -DLLAMA_CUDA_F16=off -DGGML_USE_CUDA=ON"
+		-DLLAMA_CUDA_FORCE_MMQ=on -DLLAMA_CUDA_F16=ON -DGGML_USE_CUDA=ON"
 
 	if use vulkan; then
 		export CMAKE_DEFS+=" -DLLAMA_VULKAN=ON -DGGML_USE_VULKAN=ON \

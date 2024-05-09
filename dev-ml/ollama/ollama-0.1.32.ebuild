@@ -42,56 +42,49 @@ dev-python/poetry
 virtual/pkgconfig
 dev-lang/go
 sys-devel/gcc:12
-cuda? ( dev-util/nvidia-cuda-toolkit )
+cuda? ( >=dev-util/nvidia-cuda-toolkit-12.4.1 )
 rocm? ( 
 >=dev-libs/rocm-opencl-runtime-9999
 >=sci-libs/hipBLAS-9999
 >=dev-util/hip-9999
 )
-rocm? ( || (
+rocm? (
 	virtual/opencl
 	sci-libs/clblast
-	sci-libs/clblas
-	) )
-opencl? ( || (
+	)
+opencl? (
 	virtual/opencl
 	sci-libs/clblast
-	sci-libs/clblas
-	) )
-sycl? ( || (
+	)
+sycl? (
 	virtual/opencl
 	sci-libs/clblast
-	sci-libs/clblas
-	) )
+	)
 vulkan? ( || ( dev-util/vulkan-loader  media-libs/mesa[vulkan] ) )
 vulkan? ( dev-util/vulkan-headers )
 kompute? ( || ( dev-util/vulkan-loader  media-libs/mesa[vulkan] ) )
 kompute? ( dev-util/vulkan-headers )
 "
 RDEPEND="
-cuda? ( dev-util/nvidia-cuda-toolkit )
+cuda? ( >=dev-util/nvidia-cuda-toolkit-12.4.1 )
 rocm? ( 
-dev-util/nvidia-cuda-toolkit
+>=dev-util/nvidia-cuda-toolkit-12.4.1
 >=dev-libs/rocm-opencl-runtime-9999
 >=sci-libs/hipBLAS-9999
 >=dev-util/hip-9999
 )
-rocm? ( || ( 
+rocm? ( 
 	virtual/opencl 
 	sci-libs/clblast
-	sci-libs/clblas
 	) 
-)
-opencl? ( || (
+opencl? (
 	virtual/opencl
 	sci-libs/clblast
-	sci-libs/clblas
-	) )
-sycl? ( || (
+	)
+sycl? (
 	virtual/opencl
 	sci-libs/clblast
-	sci-libs/clblas
-	) )
+	)
 vulkan? ( || ( dev-util/vulkan-loader  media-libs/mesa[vulkan] ) )
 vulkan? ( dev-util/vulkan-headers )
 kompute? ( || ( dev-util/vulkan-loader  media-libs/mesa[vulkan] ) )
@@ -115,12 +108,15 @@ src_prepare() {
 }
 src_compile() {
 
-	export CGO_CFLAGS="${CFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
-	export CGO_CXXFLAGS="${CXXFLAGS} -Wno-unuse-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
-	export CGO_CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CFLAGS="${CFLAGS} -Wno-unused-command-line-argument -fcf-protection=none --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CXXFLAGS="${CXXFLAGS} -Wno-unused-command-line-argument -fcf-protection=none --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CPPFLAGS="${CPPFLAGS} -Wno-unused-command-line-argument -fcf-protection=none --rocm-device-lib-path=/usr/lib/amdgcn/bitcode"
+	export CGO_CFLAGS="${CFLAGS}"
+	export CGO_CXXFLAGS="${CXXFLAGS}"
+	export CGO_CPPFLAGS="${CPPFLAGS}"
 	export CGO_LDFLAGS="${LDFLAGS}"
 
-	export CMAKE_DEFS="-DLLAMA_NATIVE=on -DLLAMA_F16C=OFF -DCMAKE_BUILD_TYPE=Release"
+	export CMAKE_DEFS="-DLLAMA_NATIVE=on -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=all"
 
 	export NVCC_PREPEND_FLAGS='-ccbin /usr/bin/gcc-12'
 
@@ -134,19 +130,17 @@ src_compile() {
 	if use opencl; then
 		export CMAKE_DEFS+=" -DLLAMA_CLBLAST=on -DGGML_USE_CLBLAST=ON"
 		export CGO_LDFLAGS+=" -lOpenCL"
-		if [ -f /lib64/libclblast.so ]; then
-			export CGO_LDFLAGS+=" -lclblast"
-		elif [ -f /lib64/libclBLAS.so ]; then
-			export CGO_LDFLAGS+=" -lclBLAS"
-		else
-			einfo "opencl USE flag requested but neither clBLAS nor clblast libraries installed! Exiting..."
-			exit 0
-		fi
+		export CGO_LDFLAGS+=" -lclblast"
+		export CLBlast_DIR=/usr/lib64/cmake/CLBLast
 	fi
 
 	if use rocm; then
 		export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on"
-		export CGO_LDFLAGS+=" -lhipblas -lrocblas -lamdhip64"
+		export ROCM_PATH=/usr/lib64
+		export CLBlast_DIR=/usr/lib64/cmake/CLBLast
+		HIP_LIBS="-lhipblas -lrocblas -lamdhip64 -lrocsolver -lamd_comgr -lhsa-runtime64 -lrocsparse -ldrm -ldrm_amdgpu"
+		export EXTRA_LIBS="-L/usr/lib64 ${HIP_LIBS}"
+		export CGO_LDFLAGS+=" ${HIP_LIBS}"
 		use uma && export CMAKE_DEFS+=" -DLLAMA_HIP_UMA=on"
 	fi
 
@@ -156,7 +150,7 @@ src_compile() {
 
 	if use vulkan; then
 		export CMAKE_DEFS+=" -DLLAMA_VULKAN=ON -DGGML_USE_VULKAN=ON \
-			-DGGML_VULKAN_CHECK_RESULTS=ON"
+			-DGGML_VULKAN_CHECK_RESULTS=ON -DLLAMA_CUDA=OFF"
 		export GGML_USE_VULKAN=ON
 		export GGML_VULKAN_CHECK_RESULTS=ON
 		export EXTRA_LIBS="-lvulkan"
@@ -196,6 +190,13 @@ src_compile() {
 
 	sed -i 's/\/sys\/module\/amdgpu\/version/\/usr\/share\/ollama\/gentoo_amdgpu_version/g' "${S}/gpu/amd_linux.go"
 	sed -i 's/\/usr\/share\/ollama\/lib\/rocm/\/lib64/g' "${S}/gpu/amd_linux.go"
+
+	if use rocm; then
+		sed -i 's/\/lib\/librocblas.so/\/librocblas.so/g' "${S}/llm/generate/gen_linux.sh"
+		sed -i 's/\$ROCM_PATH\/llvm\/bin\/clang/\/usr\/lib\/llvm\/19\/bin\/clang/g' "${S}/llm/generate/gen_linux.sh"
+		sed -i 's/\${ROCM_PATH}\/lib/\${ROCM_PATH}/g' "${S}/llm/generate/gen_linux.sh"
+		sed -i 's/grep -e rocm -e amdgpu -e libtinfo/grep -i "roc\\|hsa-runtime\\|hip\\|drm\\|tinfo\\|comgr"/g' "${S}/llm/generate/gen_linux.sh"
+	fi
 
 	ego generate ./...
 	for file in ${S}/llm/llama.cpp/Makefile ${S}/llm/llama.cpp/CMakeLists.txt; do

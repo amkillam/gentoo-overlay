@@ -103,7 +103,6 @@ src_unpack() {
 
 src_prepare() {
 	use vulkan && eapply "${FILESDIR}/${P}-vulkan-support.patch"
-	eapply "${FILESDIR}/${P}-buildgen.patch"
 	eapply_user
 }
 src_compile() {
@@ -128,75 +127,82 @@ src_compile() {
 		export CMAKE_DEFS+=" -DLLAMA_METAL=on -DLLAMA_ACCELERATE=on -DGGML_USE_METAL=ON"
 
 	if use opencl; then
-		export CMAKE_DEFS+=" -DLLAMA_CLBLAST=on -DGGML_USE_CLBLAST=ON"
-		export CGO_LDFLAGS+=" -lOpenCL"
-		export CGO_LDFLAGS+=" -lclblast"
+		export CMAKE_DEFS="${CMAKE_DEFS} -DLLAMA_CLBLAST=on -DGGML_USE_CLBLAST=ON"
+		export CGO_LDFLAGS="${CGO_LDFLAGS} -lOpenCL -lclblast"
 		export CLBlast_DIR=/usr/lib64/cmake/CLBLast
 	fi
 
 	if use rocm; then
 		export CMAKE_DEFS+=" -DLLAMA_HIPBLAS=on"
-		export ROCM_PATH=/usr/lib64
+		export ROCM_PATH=/usr
+		export HIP_PATH="$ROCM_PATH"
 		export CLBlast_DIR=/usr/lib64/cmake/CLBLast
 		HIP_LIBS="-lhipblas -lrocblas -lamdhip64 -lrocsolver -lamd_comgr -lhsa-runtime64 -lrocsparse -ldrm -ldrm_amdgpu"
 		export EXTRA_LIBS="-L/usr/lib64 ${HIP_LIBS}"
-		export CGO_LDFLAGS+=" ${HIP_LIBS}"
-		use uma && export CMAKE_DEFS+=" -DLLAMA_HIP_UMA=on"
+		export CGO_LDFLAGS="${CGO_LDFLAGS} ${HIP_LIBS}"
+		use uma && export CMAKE_DEFS="${CMAKE_DEFS} -DLLAMA_HIP_UMA=on"
 	fi
 
 	use cuda &&
-		export CMAKE_DEFS+=" -DLLAMA_CUDA=on -DLLAMA_CUDA_FORCE_DMMV=on \
+		export CMAKE_DEFS="${CMAKE_DEFS} -DLLAMA_CUDA=on -DLLAMA_CUDA_FORCE_DMMV=on \
 		-DLLAMA_CUDA_FORCE_MMQ=on -DLLAMA_CUDA_F16=ON -DGGML_USE_CUDA=ON"
 
 	if use vulkan; then
-		export CMAKE_DEFS+=" -DLLAMA_VULKAN=ON -DGGML_USE_VULKAN=ON \
+		export CMAKE_DEFS="${CMAKE_DEFS} -DLLAMA_VULKAN=ON -DGGML_USE_VULKAN=ON \
 			-DGGML_VULKAN_CHECK_RESULTS=ON -DLLAMA_CUDA=OFF"
 		export GGML_USE_VULKAN=ON
 		export GGML_VULKAN_CHECK_RESULTS=ON
 		export EXTRA_LIBS="-lvulkan"
-		export CGO_LDFLAGS+=" -lvulkan"
+		export CGO_LDFLAGS="${CGO_LDFLAGS} -lvulkan"
 	fi
 
 	if use sycl; then
-		export CMAKE_DEFS+=" -DLLAMA_SYCL=on -DGGML_USE_SYCL=ON"
-		export CGO_CFLAGS+=" -fsycl"
-		export CGO_CXXFLAGS+=" -fsycl"
-		export CGO_CPPFLAGS+=" -fsycl"
+		export CMAKE_DEFS="${CMAKE_DEFS} -DLLAMA_SYCL=on -DGGML_USE_SYCL=ON"
+		export CGO_CFLAGS="${CGO_CFLAGS} -fsycl"
+		export CGO_CXXFLAGS="${CGO_CXXFLAGS} -fsycl"
+		export CGO_CPPFLAGS="${CGO_CPPFLAGS} -fsycl"
 	fi
 
-	use mpi && export CMAKE_DEFS+=" -DLLAMA_MPI=on"
-	use hbm && export CMAKE_DEFS+=" -DLLAMA_CPU_HBM=on"
+	use mpi && export CMAKE_DEFS="${CMAKE_DEFS} -DLLAMA_MPI=on"
+	use hbm && export CMAKE_DEFS="${CMAKE_DEFS} -DLLAMA_CPU_HBM=on"
 	use kompute &&
-		export CMAKE_DEFS+=" -DLLAMA_KOMPUTE=on -DKOMPUTE_OPT_USE_BUILT_IN_SPDLOG=OFF \
+		export CMAKE_DEFS="${CMAKE_DEFS} -DLLAMA_KOMPUTE=on -DKOMPUTE_OPT_USE_BUILT_IN_SPDLOG=OFF \
 		-DKOMPUTE_OPT_USE_BUILT_IN_FMT=OFF -DKOMPUTE_OPT_USE_BUILT_IN_GOOGLE_TEST=OFF \
 		-DKOMPUTE_OPT_USE_BUILT_IN_PYBIND11=OFF -DKOMPUTE_OPT_USE_BUILT_IN_VULKAN_HEADER=OFF \
 		-DKOMPUTE_OPT_DISABLE_VULKAN_VERSION_CHECK=ON -DGGML_USE_CLBLAST=ON"
 
-	use cpu_flags_x86_avx && export CMAKE_DEFS+=" -DLLAMA_AVX=on"
-	use cpu_flags_x86_avx2 && export CMAKE_DEFS+=" -DLLAMA_AVX2=on"
-	use cpu_flags_x86_avx512 && export CMAKE_DEFS+=" -DLLAMA_AVX512=on"
-	use cpu_flags_x86_avx512vbmi && export CMAKE_DEFS+=" -DLLAMA_AVX512_VBMI=on"
-	use cpu_flags_x86_avx512_vnni && export CMAKE_DEFS+=" -DLLAMA_AVX512_VNNI=on"
-	use cpu_flags_x86_fma3 && export CMAKE_DEFS+=" -DLLAMA_FMA=on"
-	use cpu_flags_x86_fma4 && export CMAKE_DEFS+=" -DLLAMA_FMA=on"
+	use cpu_flags_x86_avx && export CMAKE_DEFS="$CMAKE_DEFS -DLLAMA_AVX=on"
+	use cpu_flags_x86_avx2 && export CMAKE_DEFS="$CMAKE_DEFS -DLLAMA_AVX2=on"
+	use cpu_flags_x86_avx512 && export CMAKE_DEFS="$CMAKE_DEFS -DLLAMA_AVX512=on"
+	use cpu_flags_x86_avx512vbmi && export CMAKE_DEFS="$CMAKE_DEFS -DLLAMA_AVX512_VBMI=on"
+	use cpu_flags_x86_avx512_vnni && export CMAKE_DEFS="$CMAKE_DEFS -DLLAMA_AVX512_VNNI=on"
+	use cpu_flags_x86_fma3 && export CMAKE_DEFS="$CMAKE_DEFS -DLLAMA_FMA=on"
+	use cpu_flags_x86_fma4 && export CMAKE_DEFS="$CMAKE_DEFS -DLLAMA_FMA=on"
 
-	use test && export CMAKE_DEFS+=" -DLLAMA_BUILD_TESTS=on -DKOMPUTE_OPT_BUILD_TESTS=ON"
+	use test && export CMAKE_DEFS="$CMAKE_DEFS -DLLAMA_BUILD_TESTS=on -DKOMPUTE_OPT_BUILD_TESTS=ON"
 
 	export OLLAMA_CUSTOM_CPU_DEFS="${CMAKE_DEFS}"
 	export CMAKE_COMMON_DEFS="${CMAKE_DEFS}"
-	export CGO_CFLAGS+=" ${CMAKE_DEFS}"
-	export CGO_CPPFLAGS+=" ${CMAKE_DEFS}"
-	export CGO_CXXFLAGS+=" ${CMAKE_DEFS}"
+	export CGO_CFLAGS="$CGO_CFLAGS ${CMAKE_DEFS}"
+	export CGO_CPPFLAGS="$CGO_CPPFLAGS ${CMAKE_DEFS}"
+	export CGO_CXXFLAGS="$CGO_CXXFLAGS ${CMAKE_DEFS}"
 
-	sed -i 's/\/sys\/module\/amdgpu\/version/\/usr\/share\/ollama\/gentoo_amdgpu_version/g' "${S}/gpu/amd_linux.go"
-	sed -i 's/\/usr\/share\/ollama\/lib\/rocm/\/lib64/g' "${S}/gpu/amd_linux.go"
+	sed -i 's,/sys/module/amdgpu/version,/usr/share/ollama/gentoo_amdgpu_version,g' "${S}/discover/amd_linux.go"
+	sed -i 's,/usr/share/ollama/lib/rocm,/lib64,g' "${S}/discover/amd_linux.go"
 
 	if use rocm; then
-		sed -i 's/\/lib\/librocblas.so/\/librocblas.so/g' "${S}/llm/generate/gen_linux.sh"
-		sed -i 's/\$ROCM_PATH\/llvm\/bin\/clang/\/usr\/lib\/llvm\/19\/bin\/clang/g' "${S}/llm/generate/gen_linux.sh"
-		sed -i 's/\${ROCM_PATH}\/lib/\${ROCM_PATH}/g' "${S}/llm/generate/gen_linux.sh"
-		sed -i 's/grep -e rocm -e amdgpu -e libtinfo/grep -i "roc\\|hsa-runtime\\|hip\\|drm\\|tinfo\\|comgr"/g' "${S}/llm/generate/gen_linux.sh"
+		sed -i 's,/opt/rocm,/usr,g' "${S}/llama/Makefile"
+		sed -i 's/-parallel-jobs=2//g' "${S}/llama/make/Makefile.rocm"
+		sed -i 's,$(HIP_PATH)/lib",$(HIP_PATH)/lib64",g' "${S}/llama/make/Makefile.rocm"
+		sed -i 's,$(HIP_PATH)/lib$,$(HIP_PATH)/lib64,g' "${S}/llama/make/Makefile.rocm"
+		# sed -i 's/\/lib\/librocblas.so/\/librocblas.so/g' "${S}/llm/generate/gen_linux.sh"
+		# sed -i 's/\$rocm_path\/llvm\/bin\/clang/\/usr\/lib\/llvm\/19\/bin\/clang/g' "${S}/llm/generate/gen_linux.sh"
+		# sed -i 's/\${rocm_path}\/lib/\${rocm_path}/g' "${S}/llm/generate/gen_linux.sh"
+		# sed -i 's/grep -e rocm -e amdgpu -e libtinfo/grep -i "roc\\|hsa-runtime\\|hip\\|drm\\|tinfo\\|comgr"/g' "${S}/llm/generate/gen_linux.sh"
 	fi
+
+	sed -i 's/g++/clang++-19/g' llama/make/common-defs.make
+	sed -i 's/gcc/clang-19/g' llama/make/common-defs.make
 
 	ego generate ./...
 	for file in ${S}/llm/llama.cpp/Makefile ${S}/llm/llama.cpp/CMakeLists.txt; do
@@ -205,10 +211,10 @@ src_compile() {
 	done
 
 	if use kompute; then
-		ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a \
-			${S}/llm/build/linux/x86_64_static/kompute/src/CMakeFiles/kompute.dir/*.o
-		ar rcs ${S}/llm/build/linux/x86_64_static/libllama.a \
-			${S}/llm/build/linux/x86_64_static/kompute/src/logger/CMakeFiles/kp_logger.dir/Logger.cpp.o
+		ar rcs "${S}/llm/build/linux/x86_64_static/libllama.a" \
+			"${S}/llm/build/linux/x86_64_static/kompute/src/CMakeFiles/kompute.dir/"*.o
+		ar rcs "${S}/llm/build/linux/x86_64_static/libllama.a" \
+			"${S}/llm/build/linux/x86_64_static/kompute/src/logger/CMakeFiles/kp_logger.dir/Logger.cpp.o"
 	fi
 
 	ego build .

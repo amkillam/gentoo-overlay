@@ -195,6 +195,7 @@ src_compile() {
 		sed -i 's/-parallel-jobs=2//g' "${S}/llama/make/Makefile.rocm"
 		sed -i 's,$(HIP_PATH)/lib",$(HIP_PATH)/lib64",g' "${S}/llama/make/Makefile.rocm"
 		sed -i 's,$(HIP_PATH)/lib$,$(HIP_PATH)/lib64,g' "${S}/llama/make/Makefile.rocm"
+		# sed -i 's/-lggml_rocm/-lrocsolver -lamd_comgr -lhsa-runtime64 -lrocsparse -ldrm -ldrm_amdgpu/g' "${S}/llama/llama.go"
 		# sed -i 's/\/lib\/librocblas.so/\/librocblas.so/g' "${S}/llm/generate/gen_linux.sh"
 		# sed -i 's/\$rocm_path\/llvm\/bin\/clang/\/usr\/lib\/llvm\/19\/bin\/clang/g' "${S}/llm/generate/gen_linux.sh"
 		# sed -i 's/\${rocm_path}\/lib/\${rocm_path}/g' "${S}/llm/generate/gen_linux.sh"
@@ -226,6 +227,8 @@ src_install() {
 	fi
 	insinto "/etc/systemd/system"
 	newins "${FILESDIR}/ollama.service" "ollama.service"
+
+	dolib.so "${S}/dist/linux-amd64/lib/ollama/libggml_rocm.so"
 
 	insinto /usr/share/ollama
 	newins "${FILESDIR}/gentoo_amdgpu_version" "gentoo_amdgpu_version"

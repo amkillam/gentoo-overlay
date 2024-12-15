@@ -18,7 +18,7 @@ KEYWORDS="~amd64"
 
 RDEPEND=">=dev-libs/rocr-runtime-${PV}
 	>=dev-libs/rocm-comgr-${PV}
-	>=dev-libs/rocm-device-libs-${PV}
+	>=dev-libs/rocm-device-libs-6.1.2${PV}
 	>=virtual/opencl-3
 	media-libs/mesa[-opencl]"
 DEPEND="${RDEPEND}

@@ -32,7 +32,7 @@ IUSE="debug test"
 DEPEND="
 	dev-util/hipcc
 	>=dev-util/rocminfo-5
-		sys-devel/clang:19
+		llvm-core/clang:19
 	dev-libs/rocm-comgr:${SLOT}
 	dev-libs/rocr-runtime:${SLOT}
 	x11-base/xorg-proto
@@ -40,7 +40,7 @@ DEPEND="
 "
 RDEPEND="${DEPEND}
 	dev-perl/URI-Encode
-	sys-devel/clang-runtime:=
+	llvm-core/clang-runtime:=
 	>=dev-libs/roct-thunk-interface-9999"
 
 S="${WORKDIR}/rocm-clr-${PV}/"

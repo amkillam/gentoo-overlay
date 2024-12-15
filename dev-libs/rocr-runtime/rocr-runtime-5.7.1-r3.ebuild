@@ -33,8 +33,8 @@ COMMON_DEPEND="dev-libs/elfutils
 	x11-libs/libdrm"
 DEPEND="${COMMON_DEPEND}
 	>=dev-libs/roct-thunk-interface-${PV}
-	>=dev-libs/rocm-device-libs-${PV}
-	sys-devel/clang:${LLVM_MAX_SLOT}=
+	>=dev-libs/rocm-device-libs-6.1.2${PV}
+	llvm-core/clang:${LLVM_MAX_SLOT}=
 	sys-devel/lld:${LLVM_MAX_SLOT}="
 RDEPEND="${DEPEND}"
 BDEPEND="app-editors/vim-core"

@@ -22,10 +22,10 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/(-)?}
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+clippy cpu_flags_x86_sse2 debug dist doc llvm-libunwind miri parallel-compiler profiler rls rustfmt rust-src +rust-analyzer +system-llvm test wasm ${ALL_LLVM_TARGETS[*]}"
+IUSE="+clippy cpu_flags_x86_sse2 debug dist doc llvm-libunwind miri parallel-compiler profiler rls rustfmt rustc-dev rust-src +rust-analyzer +system-llvm test wasm ${ALL_LLVM_TARGETS[*]}"
 
 # List all the working slots in LLVM_VALID_SLOTS, newest first.
-LLVM_VALID_SLOTS=(17)
+LLVM_VALID_SLOTS=(18)
 LLVM_MAX_SLOT="${LLVM_VALID_SLOTS[0]}"
 
 # splitting usedeps needed to avoid CI/pkgcheck's UncheckableDep limitation
@@ -35,20 +35,20 @@ for _s in ${LLVM_VALID_SLOTS[@]}; do
 	LLVM_DEPEND+=" ( "
 	for _x in ${ALL_LLVM_TARGETS[@]}; do
 		LLVM_DEPEND+="
-			${_x}? ( sys-devel/llvm:${_s}[${_x}(-)] )"
+			${_x}? ( llvm-core/llvm:${_s}[${_x}(-)] )"
 	done
 	LLVM_DEPEND+=" )"
 done
 unset _s _x
 LLVM_DEPEND+=" )
-	<sys-devel/llvm-$((LLVM_MAX_SLOT + 1)):=
+	<llvm-core/llvm-$((LLVM_MAX_SLOT + 1)):=
 "
 
 BDEPEND="${PYTHON_DEPS}
 	app-eselect/eselect-rust
 	|| (
 		>=sys-devel/gcc-4.7
-		>=sys-devel/clang-3.5
+		>=llvm-core/clang-3.5
 	)
 	!system-llvm? (
 		>=dev-build/cmake-3.13.4
@@ -68,7 +68,7 @@ DEPEND="
 	system-llvm? (
 		${LLVM_DEPEND}
 		llvm-libunwind? ( sys-libs/llvm-libunwind:= )
-		>=sys-devel/clang-runtime-14.0
+		>=llvm-core/clang-runtime-14.0
 	)
 	!system-llvm? (
 		!llvm-libunwind? (
@@ -153,7 +153,7 @@ pre_build_checks() {
 }
 
 llvm_check_deps() {
-	has_version -r "sys-devel/llvm:${LLVM_SLOT}[${LLVM_TARGET_USEDEPS// /,}]"
+	has_version -r "llvm-core/llvm:${LLVM_SLOT}[${LLVM_TARGET_USEDEPS// /,}]"
 }
 
 pkg_pretend() {
@@ -192,7 +192,7 @@ src_unpack() {
 	cd ${S}
 
 	if use system-llvm; then
-		rm -rf src/llvm-project/{clang,clang-tools-extra,compiler-rt,lld,lldb,llvm}
+		rm -rf src/llvm-project/{clang,clang-tools-extra,lld,lldb,llvm}
 		rm -rf src/llvm-project/libunwind/*
 		# We never enable emscripten.
 		rm -rf src/llvm-emscripten/
@@ -201,7 +201,7 @@ src_unpack() {
 		rm -rf src/tools/lld
 		rm -rf src/tools/lldb
 		# CI tooling won't be used
-		rm -rf src/ci
+		#		rm -rf src/ci
 	fi
 
 	# Remove other unused vendored libraries
@@ -239,6 +239,7 @@ src_unpack() {
 	use rustfmt && tools+=',"rustfmt"'
 	use rust-analyzer && tools+=',"rust-analyzer"'
 	use rust-src && tools+=',"src"'
+	use rustc-dev && tools+=',"rustc-dev"'
 
 	rust_target="$(rust_abi)"
 
@@ -335,10 +336,15 @@ src_unpack() {
 		compression-formats = ["xz"]
 	_EOF_
 
+	declare -A target_flags_pairs
 	for v in $(multilib_get_enabled_abi_pairs); do
 		rust_target=$(rust_abi $(get_abi_CHOST ${v##*.}))
 		arch_cflags="$(get_abi_CFLAGS ${v##*.})"
+		target_flags_pairs["$rust_target"]="$arch_cflags"
+	done
 
+	for rust_target in "${!target_flags_pairs[@]}"; do
+		arch_cflags="${target_flags_pairs["$rust_target"]}"
 		cat <<-_EOF_ >>"${S}"/config.env
 			CFLAGS_${rust_target}=${arch_cflags}
 		_EOF_
@@ -354,11 +360,11 @@ src_unpack() {
 		_EOF_
 		# by default librustc_target/spec/linux_musl_base.rs sets base.crt_static_default = true;
 		# but we patch it and set to false here as well
-		if use elibc_musl; then
-			cat <<-_EOF_ >>"${S}"/config.toml
-				crt-static = false
-			_EOF_
-		fi
+		# if use elibc_musl; then
+		# 	cat <<-_EOF_ >>"${S}"/config.toml
+		# 		crt-static = false
+		# 	_EOF_
+		# fi
 		if use system-llvm; then
 			cat <<-_EOF_ >>"${S}"/config.toml
 				llvm-config = "$(get_llvm_prefix "${LLVM_MAX_SLOT}")/bin/llvm-config"

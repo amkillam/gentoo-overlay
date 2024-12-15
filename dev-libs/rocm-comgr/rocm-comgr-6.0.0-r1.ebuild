@@ -40,10 +40,10 @@ HOMEPAGE="https://github.com/ROCm/ROCm-CompilerSupport"
 LICENSE="MIT"
 SLOT="0/$(ver_cut 1-2)"
 
-RDEPEND=">=dev-libs/rocm-device-libs-${PV}
-	sys-devel/clang-runtime:=
+RDEPEND=">=dev-libs/rocm-device-libs-6.1.2${PV}
+	llvm-core/clang-runtime:=
 	$(llvm_gen_dep '
-		sys-devel/clang:${LLVM_SLOT}=
+		llvm-core/clang:${LLVM_SLOT}=
 		sys-devel/lld:${LLVM_SLOT}=
 	')
 "

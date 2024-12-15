@@ -25,7 +25,7 @@ RESTRICT="!test? ( test )"
 
 BDEPEND="
 	dev-build/rocm-cmake
-		sys-devel/clang:19
+		llvm-core/clang:19
 		sys-devel/lld:19
 "
 

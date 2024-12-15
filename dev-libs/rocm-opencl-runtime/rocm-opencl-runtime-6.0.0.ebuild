@@ -27,7 +27,7 @@ RESTRICT="!test? ( test )"
 
 RDEPEND=">=dev-libs/rocr-runtime-6.0
 	>=dev-libs/rocm-comgr-6.0
-	>=dev-libs/rocm-device-libs-6.0
+	>=dev-libs/rocm-device-libs-6.1.26.0
 	>=virtual/opencl-3
 	media-libs/mesa[-opencl]"
 DEPEND="${RDEPEND}"

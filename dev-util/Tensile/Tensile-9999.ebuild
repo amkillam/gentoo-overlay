@@ -35,7 +35,7 @@ RDEPEND="${PYTHON_DEPS}
 	dev-python/msgpack[${PYTHON_USEDEP}]
 	>=dev-util/hip-6.0.0-r1
 	>=dev-util/rocm-smi-4.3.0
-		sys-devel/clang:19
+		llvm-core/clang:19
 "
 DEPEND="${RDEPEND}"
 BDEPEND="

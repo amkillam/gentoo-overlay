@@ -28,7 +28,7 @@ DEPEND="
 	dev-util/hipcc
 	>=dev-util/rocminfo-5
 	$(llvm_gen_dep '
-		sys-devel/clang:${LLVM_SLOT}
+		llvm-core/clang:${LLVM_SLOT}
 	')
 	dev-libs/rocm-comgr:${SLOT}
 	dev-libs/rocr-runtime:${SLOT}
@@ -37,7 +37,7 @@ DEPEND="
 "
 RDEPEND="${DEPEND}
 	dev-perl/URI-Encode
-	sys-devel/clang-runtime:=
+	llvm-core/clang-runtime:=
 	>=dev-libs/roct-thunk-interface-5"
 
 PATCHES=(

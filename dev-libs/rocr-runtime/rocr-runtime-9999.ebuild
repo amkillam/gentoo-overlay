@@ -30,8 +30,8 @@ COMMON_DEPEND="dev-libs/elfutils
 	x11-libs/libdrm"
 DEPEND="${COMMON_DEPEND}
 	>=dev-libs/roct-thunk-interface-${PV}
-	>=dev-libs/rocm-device-libs-${PV}
-	sys-devel/clang:19
+	>=dev-libs/rocm-device-libs-6.1.2
+	llvm-core/clang:19
 	sys-devel/lld:19
 "
 RDEPEND="${DEPEND}"

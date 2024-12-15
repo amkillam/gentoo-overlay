@@ -28,7 +28,7 @@ RESTRICT="!test? ( test )"
 BDEPEND="
 	dev-build/rocm-cmake
 	$(llvm_gen_dep '
-		sys-devel/clang:${LLVM_SLOT}
+		llvm-core/clang:${LLVM_SLOT}
 		sys-devel/lld:${LLVM_SLOT}
 	')
 "

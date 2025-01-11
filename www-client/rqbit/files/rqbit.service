@@ -19,7 +19,6 @@ KeyringMode=private
 LockPersonality=true
 NoNewPrivileges=true
 MemoryDenyWriteExecute=true
-PrivateTmp=true
 PrivateDevices=true
 ProtectClock=true
 ProtectKernelLogs=true

@@ -1,0 +1,40 @@
+[Unit]
+Description=rqbit bittorrent client
+Wants=network-online.target
+After=network-online.target
+
+
+[Service]
+User=rqbit
+TimeoutSec=30
+RemainAfterExit=yes
+Restart=on-abort
+Type=simple
+ExecStart=rqbit --enable-upnp-server --http-api-listen-addr 0.0.0.0:3030 server start /usr/share/rqbit/Downloads
+
+# Hardening
+CapabilityBoundingSet=
+DevicePolicy=closed
+KeyringMode=private
+LockPersonality=true
+NoNewPrivileges=true
+MemoryDenyWriteExecute=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectClock=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectHostname=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+SystemCallFilter=@system-service
+SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+
+
+[Install]
+WantedBy=multi-user.target

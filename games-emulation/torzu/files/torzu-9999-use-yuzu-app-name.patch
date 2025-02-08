@@ -1,0 +1,71 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7f3e51184..d738e171f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -733,13 +733,14 @@ endif()
+ # https://specifications.freedesktop.org/shared-mime-info-spec/shared-mime-info-spec-latest.html
+ # https://www.freedesktop.org/software/appstream/docs/
+ if(ENABLE_QT AND UNIX AND NOT APPLE)
+-    install(FILES "dist/onion.torzu_emu.torzu.desktop"
++    install(FILES "dist/org.yuzu_emu.yuzu.desktop"
+             DESTINATION "share/applications")
+     install(FILES "dist/yuzu.svg"
+             DESTINATION "share/icons/hicolor/scalable/apps"
+-            RENAME "onion.torzu_emu.torzu.svg")
+-    install(FILES "dist/onion.torzu_emu.torzu.xml"
++            RENAME "org.yuzu_emu.yuzu.svg")
++    install(FILES "dist/org.yuzu_emu.yuzu.xml"
+             DESTINATION "share/mime/packages")
+-    install(FILES "dist/onion.torzu_emu.torzu.metainfo.xml"
++    install(FILES "dist/org.yuzu_emu.yuzu.metainfo.xml"
+             DESTINATION "share/metainfo")
+ endif()
++
+diff --git a/src/yuzu/about_dialog.cpp b/src/yuzu/about_dialog.cpp
+index 61a6efc7c..eeff54359 100644
+--- a/src/yuzu/about_dialog.cpp
++++ b/src/yuzu/about_dialog.cpp
+@@ -20,7 +20,7 @@ AboutDialog::AboutDialog(QWidget* parent)
+ 
+     ui->setupUi(this);
+     // Try and request the icon from Qt theme (Linux?)
+-    const QIcon yuzu_logo = QIcon::fromTheme(QStringLiteral("onion.torzu_emu.torzu"));
++    const QIcon yuzu_logo = QIcon::fromTheme(QStringLiteral("org.yuzu_emu.yuzu"));
+     if (!yuzu_logo.isNull()) {
+         ui->labelLogo->setPixmap(yuzu_logo.pixmap(200));
+     }
+diff --git a/src/yuzu/aboutdialog.ui b/src/yuzu/aboutdialog.ui
+index 788235422..0c41922fb 100644
+--- a/src/yuzu/aboutdialog.ui
++++ b/src/yuzu/aboutdialog.ui
+@@ -69,7 +69,7 @@
+           </sizepolicy>
+          </property>
+          <property name="text">
+-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:28pt;&quot;&gt;torzu&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
++          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:28pt;&quot;&gt;yuzu&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+diff --git a/src/yuzu/main.cpp b/src/yuzu/main.cpp
+index 4b160223c..b79ccdcff 100644
+--- a/src/yuzu/main.cpp
++++ b/src/yuzu/main.cpp
+@@ -4518,7 +4518,7 @@ void GMainWindow::UpdateWindowTitle(std::string_view title_name, std::string_vie
+     const auto description = std::string(Common::g_scm_desc);
+     const auto build_id = std::string(Common::g_build_id);
+ 
+-    const auto yuzu_title = fmt::format("torzu | {}-{}", branch_name, description);
++    const auto yuzu_title = fmt::format("yuzu | {}-{}", branch_name, description);
+     const auto override_title =
+         fmt::format(fmt::runtime(std::string(Common::g_title_bar_format_idle)), build_id);
+     const auto window_title = override_title.empty() ? yuzu_title : override_title;
+@@ -5266,7 +5266,7 @@ int main(int argc, char* argv[]) {
+ 
+     // Fix the Wayland appId. This needs to match the name of the .desktop file without the .desktop
+     // suffix.
+-    QGuiApplication::setDesktopFileName(QStringLiteral("onion.torzu_emu.torzu"));
++    QGuiApplication::setDesktopFileName(QStringLiteral("org.yuzu_emu.yuzu"));
+ #endif
+ 
+     SetHighDPIAttributes();

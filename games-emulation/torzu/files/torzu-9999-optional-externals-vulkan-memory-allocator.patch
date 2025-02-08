@@ -1,0 +1,55 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7f3e51184..e0ee0f394 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -40,6 +40,8 @@ option(YUZU_USE_EXTERNAL_VULKAN_UTILITY_LIBRARIES "Use Vulkan-Utility-Libraries
+ 
+ option(YUZU_USE_EXTERNAL_VULKAN_SPIRV_TOOLS "Use SPIRV-Tools from externals" ON)
+ 
++option(YUZU_USE_EXTERNAL_VULKAN_MEMORY_ALLOCATOR "Use VulkanMemoryAllocator from externals" ON)
++
+ option(YUZU_USE_QT_MULTIMEDIA "Use QtMultimedia for Camera" OFF)
+ 
+ option(YUZU_USE_QT_WEB_ENGINE "Use QtWebEngine for web applet implementation" OFF)
+@@ -306,7 +308,11 @@ find_package(Opus 1.3 MODULE)
+ find_package(RenderDoc MODULE)
+ find_package(SimpleIni MODULE)
+ find_package(stb MODULE)
+-find_package(VulkanMemoryAllocator CONFIG)
++
++if (NOT YUZU_USE_EXTERNAL_VULKAN_MEMORY_ALLOCATOR)
++    find_package(VulkanMemoryAllocator CONFIG)
++endif()
++
+ find_package(ZLIB 1.2 REQUIRED)
+ find_package(zstd 1.5 REQUIRED)
+ 
+diff --git a/externals/CMakeLists.txt b/externals/CMakeLists.txt
+index 2421fc234..11d63f612 100644
+--- a/externals/CMakeLists.txt
++++ b/externals/CMakeLists.txt
+@@ -184,7 +184,8 @@ endif()
+ add_subdirectory(nx_tzdb)
+ 
+ # VMA
+-if (NOT TARGET GPUOpen::VulkanMemoryAllocator)
++if (NOT TARGET GPUOpen::VulkanMemoryAllocator AND
++		YUZU_USE_EXTERNAL_VULKAN_MEMORY_ALLOCATOR)
+     add_subdirectory(VulkanMemoryAllocator)
+ endif()
+ 
+diff --git a/src/video_core/CMakeLists.txt b/src/video_core/CMakeLists.txt
+index 94a88eede..4b082f553 100644
+--- a/src/video_core/CMakeLists.txt
++++ b/src/video_core/CMakeLists.txt
+@@ -328,7 +328,9 @@ target_link_options(video_core PRIVATE ${FFmpeg_LDFLAGS})
+ 
+ add_dependencies(video_core host_shaders)
+ target_include_directories(video_core PRIVATE ${HOST_SHADERS_INCLUDE})
+-target_link_libraries(video_core PRIVATE sirit Vulkan::Headers Vulkan::UtilityHeaders GPUOpen::VulkanMemoryAllocator)
++if (YUZU_USE_EXTERNAL_VULKAN_MEMORY_ALLOCATOR)
++    target_link_libraries(video_core PRIVATE sirit Vulkan::Headers Vulkan::UtilityHeaders GPUOpen::VulkanMemoryAllocator)
++endif()
+ 
+ if (ENABLE_NSIGHT_AFTERMATH)
+     if (NOT DEFINED ENV{NSIGHT_AFTERMATH_SDK})

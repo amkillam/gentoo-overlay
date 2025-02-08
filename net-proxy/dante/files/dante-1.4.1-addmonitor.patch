@@ -1,0 +1,12 @@
+diff --git a/lib/config_parse.y b/lib/config_parse.y
+index b6915a4..1afdd08 100644
+--- a/lib/config_parse.y
++++ b/lib/config_parse.y
+@@ -118,6 +118,7 @@ static void post_addrule(void);
+  */
+ static void pre_addrule(struct rule_t *rule);
+ static void pre_addmonitor(monitor_t *monitor);
++void addmonitor(monitor_t *monitor);
+ 
+ /*
+  * Prepare pointers to point to the correct memory for adding a

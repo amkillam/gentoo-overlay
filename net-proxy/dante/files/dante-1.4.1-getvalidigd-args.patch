@@ -1,0 +1,57 @@
+diff --git a/configure b/configure
+index 0e5bd03..2819f0e 100755
+--- a/configure
++++ b/configure
+@@ -32446,7 +32446,7 @@ main ()
+ 	    (void)sizeof(IGDdatas->CIF.servicetype);
+ 
+             (void)UPNP_GetIGDFromUrl(str, UPNPUrls, IGDdatas, str, 0);
+-            (void)UPNP_GetValidIGD(UPNPDev, UPNPUrls, IGDdatas, str, 0);
++            (void)UPNP_GetValidIGD(UPNPDev, UPNPUrls, IGDdatas, str, 0, str, 0);
+             (void)UPNP_GetExternalIPAddress(str, str, str);
+             (void)UPNP_AddPortMapping(str, str, str, str, str, str, str, str);
+             (void)UPNP_DeletePortMapping(str, str, str, str, str);
+@@ -32495,7 +32495,7 @@ main ()
+ 			 (void)strlen(IGDdatas->servicetype);
+ 
+ 			 (void)UPNP_GetIGDFromUrl(str, UPNPUrls, IGDdatas, str, 0);
+-			 (void)UPNP_GetValidIGD(UPNPDev, UPNPUrls, IGDdatas, str, 0);
++			 (void)UPNP_GetValidIGD(UPNPDev, UPNPUrls, IGDdatas, str, 0, str, 0);
+ 			 (void)UPNP_GetExternalIPAddress(str, str, str);
+ 			 (void)UPNP_AddPortMapping(str, str, str, str, str, str, str, str);
+ 			 (void)UPNP_DeletePortMapping(str, str, str, str, str);
+diff --git a/lib/upnp.c b/lib/upnp.c
+index a4e3b1b..6b1795f 100644
+--- a/lib/upnp.c
++++ b/lib/upnp.c
+@@ -203,7 +203,7 @@ socks_initupnp(gw, emsg, emsglen)
+          socks_autoadd_directroute(&commands, &protocols, &saddr, &smask);
+       }
+ 
+-      devtype = UPNP_GetValidIGD(dev, &url, &data, myaddr, sizeof(myaddr));
++      devtype = UPNP_GetValidIGD(dev, &url, &data, myaddr, sizeof(myaddr), myaddr, sizeof(myaddr));
+       switch (devtype) {
+          case UPNP_NO_IGD:
+             snprintf(emsg, emsglen, "no UPNP IGD discovered on local network");
+diff --git a/miniupnpc.m4 b/miniupnpc.m4
+index 85086d4..4895b00 100644
+--- a/miniupnpc.m4
++++ b/miniupnpc.m4
+@@ -57,7 +57,7 @@ if test x"${UPNP}" != xno; then
+ 	    (void)sizeof(IGDdatas->CIF.servicetype);
+ 
+             (void)UPNP_GetIGDFromUrl(str, UPNPUrls, IGDdatas, str, 0);
+-            (void)UPNP_GetValidIGD(UPNPDev, UPNPUrls, IGDdatas, str, 0);
++            (void)UPNP_GetValidIGD(UPNPDev, UPNPUrls, IGDdatas, str, 0, str, 0);
+             (void)UPNP_GetExternalIPAddress(str, str, str);
+             (void)UPNP_AddPortMapping(str, str, str, str, str, str, str, str);
+             (void)UPNP_DeletePortMapping(str, str, str, str, str);],
+@@ -85,7 +85,7 @@ if test x"${UPNP}" != xno; then
+ 			 (void)strlen(IGDdatas->servicetype);
+ 
+ 			 (void)UPNP_GetIGDFromUrl(str, UPNPUrls, IGDdatas, str, 0);
+-			 (void)UPNP_GetValidIGD(UPNPDev, UPNPUrls, IGDdatas, str, 0);
++			 (void)UPNP_GetValidIGD(UPNPDev, UPNPUrls, IGDdatas, str, 0, str, 0);
+ 			 (void)UPNP_GetExternalIPAddress(str, str, str);
+ 			 (void)UPNP_AddPortMapping(str, str, str, str, str, str, str, str);
+ 			 (void)UPNP_DeletePortMapping(str, str, str, str, str);],

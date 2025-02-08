@@ -1,0 +1,13 @@
+diff --git a/include/monitor.h b/include/monitor.h
+index afbef9f..9861fac 100755
+--- a/include/monitor.h
++++ b/include/monitor.h
+@@ -43,6 +43,8 @@
+ 
+ /* $Id: monitor.h,v 1.5.2.5 2014/08/24 11:41:35 karls Exp $ */
+ 
++#include "sockd.h"
++
+ #ifndef _MONITOR_H_
+ #define _MONITOR_H_
+ 
